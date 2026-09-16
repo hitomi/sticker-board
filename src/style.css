@@ -307,6 +307,7 @@ button svg {
   gap: 7px;
 }
 .fit-label {
+  min-height: 32px;
   padding-left: 8px;
   margin-left: 2px;
   border-left: 1px solid #dedde5;
@@ -784,9 +785,6 @@ button svg {
   }
   .desktop-hint {
     display: none !important;
-  }
-  .fit-label {
-    display: none;
   }
   .object-tools {
     gap: 0;
@@ -1523,4 +1521,11 @@ img {
     width: 44px;
     height: 44px;
   }
+}
+
+.canvas-stage {
+  touch-action: none;
+}
+.canvas-wrap {
+  transform-origin: center;
 }

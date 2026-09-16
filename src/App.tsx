@@ -895,7 +895,13 @@ export default function App({
               {autosave.status === "temporary" && <span>临时模式</span>}
               <Maximize size={13} />
               {Math.round(editor.zoom * 100)}%{" "}
-              <span className="fit-label">适应画布</span>
+              <button
+                className="fit-label"
+                onClick={editor.resetView}
+                disabled={editor.busy}
+              >
+                适应画布
+              </button>
             </span>
           </footer>
         </section>

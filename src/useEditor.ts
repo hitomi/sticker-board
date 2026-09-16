@@ -6,6 +6,7 @@ import {
   type FabricObject,
 } from "fabric";
 import type { Sticker, CanvasSnapshot } from "./library";
+import { attachTouchGestures } from "./touchGestures";
 import { getDeviceSize } from "./useDeviceSize";
 export function useEditor(
   report: (message: string) => void,
@@ -28,6 +29,8 @@ export function useEditor(
   const multiSelectRef = useRef(false);
   const [count, setCount] = useState(0);
   const [zoom, setZoom] = useState(1);
+  const [viewScale, setViewScale] = useState(1);
+  const touch = useRef<ReturnType<typeof attachTouchGestures> | null>(null);
   const [historyState, setHistoryState] = useState({ index: 0, length: 1 });
   const history = useRef<CanvasSnapshot[]>([]);
   const index = useRef(-1);
@@ -158,7 +161,25 @@ export function useEditor(
     c.upperCanvasEl.addEventListener("pointerdown", toggleByPointer, {
       capture: true,
     });
-    const observer = new ResizeObserver(fit);
+    touch.current = attachTouchGestures(c, stage.current!, {
+      blocked: () => locked.current,
+      multiSelect: () => multiSelectRef.current,
+      select: selectObjects,
+      begin: () => {
+        locked.current = true;
+        setBusy(true);
+      },
+      finish: (changed) => {
+        locked.current = false;
+        setBusy(false);
+        if (changed) commit();
+      },
+      viewChanged: setViewScale,
+    });
+    const observer = new ResizeObserver(() => {
+      touch.current?.resetView();
+      fit();
+    });
     observer.observe(stage.current!);
     fit();
     if (initialSnapshot)
@@ -169,6 +190,8 @@ export function useEditor(
         capture: true,
       });
       observer.disconnect();
+      touch.current?.dispose();
+      touch.current = null;
       canvas.current = null;
       void c.dispose();
     };
@@ -479,7 +502,8 @@ export function useEditor(
     toggleMultiSelect,
     selectAll,
     count,
-    zoom,
+    zoom: zoom * viewScale,
+    resetView: () => touch.current?.resetView(),
     busy,
     add,
     action,
