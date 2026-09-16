@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
-  ArrowDownToLine,
+  ArrowDown,
   ArrowUp,
   Expand,
   Shrink,
@@ -13,7 +13,6 @@ import {
   FlipHorizontal2,
   FlipVertical2,
   ImagePlus,
-  Layers2,
   LoaderCircle,
   Maximize,
   Minus,
@@ -705,8 +704,8 @@ export default function App({
     ["flipX", "水平翻转", <FlipHorizontal2 />],
     ["flipY", "垂直翻转", <FlipVertical2 />],
     ["duplicate", "复制贴纸", <Copy />],
-    ["front", "上移一层", <Layers2 />],
-    ["back", "下移一层", <ArrowDownToLine />],
+    ["front", "上移一层", <ArrowUp />],
+    ["back", "下移一层", <ArrowDown />],
     ["delete", "删除贴纸", <Trash2 />],
   ];
   return (
