@@ -18,7 +18,7 @@ const rotate = (p: Point, radians: number) =>
     p.x * Math.sin(radians) + p.y * Math.cos(radians),
   );
 
-// Own touch gestures on the stage; mouse and single-finger control handles stay with Fabric.
+// Own all touch gestures, including touches on handles. Fabric keeps mouse/pen controls.
 export function attachTouchGestures(
   canvas: Canvas,
   stage: HTMLElement,
@@ -29,7 +29,7 @@ export function attachTouchGestures(
   let view = { scale: 1, x: 0, y: 0 };
   let changed = false;
   let active = false;
-  let delegated = false;
+  let touchingControl = false;
   let target: FabricObject | undefined;
   let tapTarget: FabricObject | undefined;
   let tapSelection: FabricObject | undefined;
@@ -97,7 +97,6 @@ export function attachTouchGestures(
       event.target.closest("button")
     )
       return;
-    if (delegated) return;
     if (!active && options.blocked()) {
       stop(event);
       return;
@@ -105,19 +104,15 @@ export function attachTouchGestures(
     if (!active) {
       const selected = canvas.getActiveObject();
       const onCanvas = event.target === canvas.upperCanvasEl;
-      if (
-        onCanvas &&
-        !options.multiSelect() &&
-        selected?.findControl(canvas.getViewportPoint(event), true)
-      ) {
-        delegated = true;
-        return;
-      }
+      touchingControl = !!(
+        onCanvas && selected?.findControl(canvas.getViewportPoint(event), true)
+      );
       const point = canvas.getScenePoint(event);
       tapTarget = onCanvas
         ? canvas.searchPossibleTargets(canvas.getObjects(), point).target
         : undefined;
-      const hitSelection = !!(onCanvas && selected?.containsPoint(point));
+      const hitSelection =
+        touchingControl || !!(onCanvas && selected?.containsPoint(point));
       tapSelection = hitSelection ? selected : tapTarget;
       // Keep the current selection until a single tap finishes. A second finger
       // can then start anywhere without deselecting or selecting another sticker.
@@ -226,17 +221,13 @@ export function attachTouchGestures(
     canvas.requestRenderAll();
   };
   const up = (event: PointerEvent) => {
-    if (delegated && event.isPrimary) {
-      delegated = false;
-      return;
-    }
     if (!active || !pointers.has(event.pointerId)) return;
     stop(event);
     pointers.delete(event.pointerId);
     if (stage.hasPointerCapture(event.pointerId))
       stage.releasePointerCapture(event.pointerId);
     if (!paired && !moved && event.type === "pointerup") {
-      if (options.multiSelect()) {
+      if (options.multiSelect() && !touchingControl) {
         const selected = canvas.getActiveObjects();
         options.select(
           tapTarget
@@ -245,7 +236,10 @@ export function attachTouchGestures(
               : [...selected, tapTarget]
             : [],
         );
-      } else if (canvas.getActiveObject() !== tapSelection) {
+      } else if (
+        !options.multiSelect() &&
+        canvas.getActiveObject() !== tapSelection
+      ) {
         options.select(tapSelection ? [tapSelection] : []);
       }
     }
@@ -253,10 +247,7 @@ export function attachTouchGestures(
     waitingForRelease = pointers.size > 0;
     if (!pointers.size) finish();
   };
-  const blur = () => {
-    delegated = false;
-    finish();
-  };
+  const blur = () => finish();
   const visibility = () => {
     if (document.hidden) blur();
   };
