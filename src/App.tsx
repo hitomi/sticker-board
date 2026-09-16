@@ -234,13 +234,13 @@ export default function App({
   const backgroundUploadRef = useRef<HTMLInputElement>(null);
   const categories = [
     { id: "all", name: "全部" },
-    ...(allowStickerUploads ? [{ id: "uploads", name: "我的导入" }] : []),
+    ...(allowStickerUploads ? [{ id: "uploads", name: "自定义" }] : []),
     ...[...new Set(pack.stickers.map((s) => s.category))]
       .filter((name) => !allowStickerUploads || name !== "我的上传")
       .map((name) => ({
         id: `category:${name}`,
         // Keep stored category names compatible with existing workspaces and exports.
-        name: name === "我的上传" ? "我的导入" : name,
+        name: name === "我的上传" ? "自定义" : name,
       })),
   ];
   const allStickers = [...pack.stickers, ...uploads];
@@ -1265,7 +1265,7 @@ export default function App({
           <label className="upload-permission">
             <span>
               <strong>允许用户导入贴纸</strong>
-              <small>导入到“我的导入”分类</small>
+              <small>导入到“自定义”分类</small>
             </span>
             <input
               type="checkbox"
