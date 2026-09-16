@@ -27,7 +27,6 @@ import {
   Undo2,
   X,
 } from "lucide-react";
-import { demo } from "./demo";
 import {
   readZip,
   readLocalImage,
@@ -149,6 +148,7 @@ export default function App({
   }
   const [pack, setPack] = useState<Pack>(initialPack);
   const [tab, setTab] = useState("all");
+  const [deletingStickers, setDeletingStickers] = useState(false);
   const [uploads, setUploads] = useState<Sticker[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadingBackground, setUploadingBackground] = useState(false);
@@ -228,6 +228,22 @@ export default function App({
         `category:${s.category}` === tab) &&
       s.name.toLowerCase().includes(query.toLowerCase()),
   );
+  function removeSticker(sticker: Sticker) {
+    if (configBusy) return;
+    setPack((current) => ({
+      ...current,
+      stickers: current.stickers.filter((item) => item.id !== sticker.id),
+    }));
+    setUploads((current) => current.filter((item) => item.id !== sticker.id));
+    if (
+      tab === `category:${sticker.category}` &&
+      !allStickers.some(
+        (item) => item.id !== sticker.id && item.category === sticker.category,
+      )
+    ) {
+      setTab("all");
+    }
+  }
   function currentConfig(): Pack {
     return {
       schemaVersion: 1,
@@ -261,6 +277,7 @@ export default function App({
     setImporting(true);
     try {
       setPack(await readZip(file));
+      setDeletingStickers(false);
       setTab("all");
       setQuery("");
     } catch (error) {
@@ -327,6 +344,7 @@ export default function App({
       setUploads([]);
       setBranding(next.branding || { ...defaultBranding });
       uploadSequence.current = 0;
+      setDeletingStickers(false);
       setTab("all");
       setQuery("");
       setDrawer(null);
@@ -519,25 +537,32 @@ export default function App({
             贴纸库 <span>{allStickers.length}</span>
           </h2>
         </div>
-        {allowZipUploads && (
+        <div className="library-actions">
           <button
             className="small-button"
-            disabled={importing}
-            onClick={() => uploadRef.current?.click()}
+            aria-label="删除模式"
+            aria-pressed={deletingStickers}
+            disabled={configBusy || (!allStickers.length && !deletingStickers)}
+            onClick={() => setDeletingStickers((current) => !current)}
           >
-            {importing ? (
-              <LoaderCircle className="spin" size={15} />
-            ) : (
-              <Plus size={15} />
-            )}
-            导入 ZIP
+            {deletingStickers ? <Check size={15} /> : <Trash2 size={15} />}
+            {deletingStickers ? "完成" : "删除"}
           </button>
-        )}
-      </div>
-      <div className="pack-name">
-        <span className="green-dot" />
-        {pack.name}
-        {pack === demo && <span className="sample-badge">示例素材</span>}
+          {allowZipUploads && (
+            <button
+              className="small-button"
+              disabled={importing}
+              onClick={() => uploadRef.current?.click()}
+            >
+              {importing ? (
+                <LoaderCircle className="spin" size={15} />
+              ) : (
+                <Plus size={15} />
+              )}
+              导入 ZIP
+            </button>
+          )}
+        </div>
       </div>
       <div className="search">
         <Search size={16} />
@@ -583,19 +608,32 @@ export default function App({
       <div className="sticker-scroll">
         <div className="sticker-grid">
           {shown.map((s) => (
-            <button
-              key={s.id}
-              className="sticker-card"
-              aria-label={`添加${s.name}`}
-              disabled={editor.busy}
-              onClick={() => void add(s)}
-            >
-              <img src={s.src} alt="" loading="lazy" />
-              <span>{s.name}</span>
-              <span className="add-indicator">
-                <Plus size={13} />
-              </span>
-            </button>
+            <div className="sticker-item" key={s.id}>
+              <button
+                className="sticker-card"
+                aria-label={`添加${s.name}`}
+                disabled={editor.busy || deletingStickers}
+                onClick={() => void add(s)}
+              >
+                <img src={s.src} alt="" loading="lazy" />
+                <span>{s.name}</span>
+                {!deletingStickers && (
+                  <span className="add-indicator">
+                    <Plus size={13} />
+                  </span>
+                )}
+              </button>
+              {deletingStickers && (
+                <button
+                  className="delete-library-sticker"
+                  aria-label={`从贴纸库删除${s.name}`}
+                  disabled={configBusy}
+                  onClick={() => removeSticker(s)}
+                >
+                  <Trash2 size={15} />
+                </button>
+              )}
+            </div>
           ))}
         </div>
         {!shown.length && (
@@ -612,7 +650,13 @@ export default function App({
       </div>
       <div className="library-foot">
         <span>
-          <Plus size={13} /> 点击贴纸，添加到画布
+          {deletingStickers ? (
+            "仅删除素材库中的贴纸"
+          ) : (
+            <>
+              <Plus size={13} /> 点击贴纸，添加到画布
+            </>
+          )}
         </span>
         <span>{shown.length} 张</span>
       </div>

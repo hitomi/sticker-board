@@ -361,25 +361,6 @@ button svg {
   width: 14px;
   height: 14px;
 }
-.pack-name {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin: 22px 0 15px;
-  font-size: 11px;
-  color: #8b8994;
-}
-.green-dot {
-  height: 5px;
-  width: 5px;
-  background: #9db29c;
-  border-radius: 50%;
-}
-.sample-badge {
-  font-size: 9px;
-  color: #aaa7b0;
-  margin-left: auto;
-}
 .search {
   display: flex;
   align-items: center;
@@ -893,18 +874,6 @@ button svg {
   .drawer .library-heading {
     justify-content: flex-end;
     min-height: 0;
-  }
-  .drawer .pack-name {
-    margin: 12px 0;
-  }
-  .drawer .library-heading + .pack-name {
-    margin-top: -24px;
-    min-height: 24px;
-    max-width: 60%;
-    margin-bottom: 18px;
-  }
-  .drawer .sample-badge {
-    display: none;
   }
   .drawer .sticker-scroll {
     max-height: 40dvh;
@@ -1427,4 +1396,46 @@ img {
   border-color: var(--accent-border);
   background: var(--accent-soft);
   color: var(--accent-text);
+}
+
+.library-heading {
+  margin-bottom: 18px;
+}
+.library-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.library-actions [aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+}
+.sticker-item {
+  position: relative;
+  min-width: 0;
+}
+.sticker-item .sticker-card {
+  width: 100%;
+}
+.sticker-item .sticker-card:disabled {
+  opacity: 1;
+}
+.delete-library-sticker {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 0 9px 0 9px;
+  background: #fff0f0;
+  color: #b13c49;
+  display: grid;
+  place-items: center;
+  border: 1px solid #f1d4d8;
+}
+@media (pointer: coarse) {
+  .delete-library-sticker {
+    width: 44px;
+    height: 44px;
+  }
 }
