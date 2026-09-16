@@ -1439,3 +1439,20 @@ img {
     height: 44px;
   }
 }
+
+.export-image-preview {
+  margin: 16px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+.export-image-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 55dvh;
+  object-fit: contain;
+  -webkit-touch-callout: default;
+  user-select: auto;
+  -webkit-user-select: auto;
+}

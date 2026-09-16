@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import {
   readZip,
+  saveBlob,
   readLocalImage,
   type Pack,
   type Sticker,
@@ -139,6 +140,18 @@ export default function App({
   storageKey: string;
   persistent: boolean;
 }) {
+  const [imagePreview, setImagePreview] = useState<{
+    url: string;
+    blob: Blob;
+    filename: string;
+  } | null>(null);
+  const [renderingImage, setRenderingImage] = useState(false);
+  const renderingImageRef = useRef(false);
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview.url);
+    };
+  }, [imagePreview]);
   const [notice, setNotice] = useState("");
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   function report(message: string) {
@@ -200,6 +213,7 @@ export default function App({
   const restoreRef = useRef<HTMLInputElement>(null);
   const configBusy =
     exporting ||
+    renderingImage ||
     importing ||
     uploadingImages ||
     uploadingBackground ||
@@ -285,6 +299,27 @@ export default function App({
       report(error instanceof Error ? error.message : "导入失败，请重试");
     } finally {
       setImporting(false);
+    }
+  }
+  async function downloadImage() {
+    if (renderingImageRef.current || configBusy) return;
+    renderingImageRef.current = true;
+    setRenderingImage(true);
+    try {
+      const result = await editor.renderImage();
+      if (!result) return;
+      const mobile =
+        /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+        (/Macintosh/i.test(navigator.userAgent) &&
+          navigator.maxTouchPoints > 1);
+      if (mobile) {
+        setImagePreview({ ...result, url: URL.createObjectURL(result.blob) });
+      } else {
+        saveBlob(result.blob, result.filename);
+      }
+    } finally {
+      renderingImageRef.current = false;
+      setRenderingImage(false);
     }
   }
   async function exportCurrent() {
@@ -746,11 +781,15 @@ export default function App({
           )}
           <button
             className="primary"
-            onClick={() => void editor.download()}
-            disabled={editor.busy}
+            onClick={() => void downloadImage()}
+            disabled={configBusy}
           >
-            <Download size={16} />
-            <span>下载图片</span>
+            {renderingImage ? (
+              <LoaderCircle size={16} className="spin" />
+            ) : (
+              <Download size={16} />
+            )}
+            <span>{renderingImage ? "正在生成…" : "下载图片"}</span>
           </button>
         </div>
       </header>
@@ -897,6 +936,29 @@ export default function App({
         drawer
       >
         {drawer === "stickers" ? library : settings}
+      </Modal>
+      <Modal
+        open={imagePreview !== null}
+        onOpenChange={(open) => {
+          if (!open) setImagePreview(null);
+        }}
+        title="保存图片"
+        description="长按图片，选择保存到相册。也可以点击下方下载。"
+      >
+        {imagePreview && (
+          <>
+            <div className="export-image-preview checker">
+              <img src={imagePreview.url} alt="画布成品预览，长按保存" />
+            </div>
+            <button
+              className="primary wide"
+              onClick={() => saveBlob(imagePreview.blob, imagePreview.filename)}
+            >
+              <Download size={16} />
+              下载图片
+            </button>
+          </>
+        )}
       </Modal>
       <Modal
         open={clearCanvasOpen}

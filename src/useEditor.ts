@@ -6,7 +6,6 @@ import {
   type FabricObject,
 } from "fabric";
 import type { Sticker, CanvasSnapshot } from "./library";
-import { saveBlob } from "./library";
 import { getDeviceSize } from "./useDeviceSize";
 export function useEditor(
   report: (message: string) => void,
@@ -406,7 +405,7 @@ export function useEditor(
     commit();
     return true;
   }
-  async function download() {
+  async function renderImage() {
     const c = canvas.current;
     if (!c || locked.current) return;
     try {
@@ -426,7 +425,7 @@ export function useEditor(
         output.toBlob(resolve, "image/png"),
       );
       if (!blob) throw new Error();
-      saveBlob(blob, `贴贴-${size.width}×${size.height}.png`);
+      return { blob, filename: `贴贴-${size.width}×${size.height}.png` };
     } catch {
       report("图片导出失败，请减小画布尺寸后重试");
     }
@@ -484,7 +483,7 @@ export function useEditor(
     busy,
     add,
     action,
-    download,
+    renderImage,
     clearStickers,
     travel,
     historyState,
