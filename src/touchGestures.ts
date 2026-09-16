@@ -32,6 +32,8 @@ export function attachTouchGestures(
   let delegated = false;
   let target: FabricObject | undefined;
   let tapTarget: FabricObject | undefined;
+  let tapSelection: FabricObject | undefined;
+  let canDragTarget = false;
   let pose: Pose | undefined;
   let start: Point[] = [];
   let startView = { ...view };
@@ -115,13 +117,14 @@ export function attachTouchGestures(
       tapTarget = onCanvas
         ? canvas.searchPossibleTargets(canvas.getObjects(), point).target
         : undefined;
-      target =
-        onCanvas && selected?.containsPoint(point) ? selected : tapTarget;
-      if (!options.multiSelect() && target !== selected)
-        options.select(target ? [target] : []);
-      if (options.multiSelect())
-        target =
-          onCanvas && selected?.containsPoint(point) ? selected : undefined;
+      const hitSelection = !!(onCanvas && selected?.containsPoint(point));
+      tapSelection = hitSelection ? selected : tapTarget;
+      // Keep the current selection until a single tap finishes. A second finger
+      // can then start anywhere without deselecting or selecting another sticker.
+      target = selected || (options.multiSelect() ? undefined : tapTarget);
+      canDragTarget = selected ? hitSelection : !!tapTarget;
+      if (!selected && target && !options.multiSelect())
+        options.select([target]);
       changed = false;
       moved = false;
       paired = false;
@@ -156,7 +159,7 @@ export function attachTouchGestures(
     if (pointers.size === 1) {
       if (distance(points[0], start[0]) < 3 && !moved) return;
       moved = true;
-      if (target && pose && !options.multiSelect()) {
+      if (target && pose && canDragTarget && !options.multiSelect()) {
         target.setPositionByOrigin(
           pose.center.add(scene(points[0]).subtract(scene(start[0]))),
           "center",
@@ -232,20 +235,19 @@ export function attachTouchGestures(
     pointers.delete(event.pointerId);
     if (stage.hasPointerCapture(event.pointerId))
       stage.releasePointerCapture(event.pointerId);
-    if (
-      !paired &&
-      !moved &&
-      event.type === "pointerup" &&
-      options.multiSelect()
-    ) {
-      const selected = canvas.getActiveObjects();
-      options.select(
-        tapTarget
-          ? selected.includes(tapTarget)
-            ? selected.filter((item) => item !== tapTarget)
-            : [...selected, tapTarget]
-          : [],
-      );
+    if (!paired && !moved && event.type === "pointerup") {
+      if (options.multiSelect()) {
+        const selected = canvas.getActiveObjects();
+        options.select(
+          tapTarget
+            ? selected.includes(tapTarget)
+              ? selected.filter((item) => item !== tapTarget)
+              : [...selected, tapTarget]
+            : [],
+        );
+      } else if (canvas.getActiveObject() !== tapSelection) {
+        options.select(tapSelection ? [tapSelection] : []);
+      }
     }
     // Wait for all fingers to lift: the remaining finger must not jump or start dragging.
     waitingForRelease = pointers.size > 0;
