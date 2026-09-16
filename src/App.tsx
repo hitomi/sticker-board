@@ -925,18 +925,21 @@ export default function App({
                   : "拖框多选 · Shift 点选"}
             </span>
             <span>
-              {autosave.status === "saving" && <span>保存中…</span>}
               {autosave.status === "error" && (
                 <button
-                  className="save-error"
+                  className="save-error canvas-save-status"
                   onClick={() => void autosave.retry().catch(() => {})}
                 >
                   未保存 · 重试
                 </button>
               )}
-              {autosave.status === "temporary" && <span>临时模式</span>}
-              <Maximize size={13} />
-              {Math.round(editor.zoom * 100)}%{" "}
+              {autosave.status === "temporary" && (
+                <span className="canvas-save-status">临时模式</span>
+              )}
+              <span className="canvas-zoom">
+                <Maximize size={13} />
+                {Math.round(editor.zoom * 100)}%
+              </span>
               <button
                 className="fit-label"
                 onClick={editor.resetView}
