@@ -31,6 +31,8 @@ export type CanvasSnapshot = {
   scene: Record<string, unknown>;
 };
 export type Pack = {
+  /** Browser-local uploads; never included in a standalone export. */
+  userUploads?: Sticker[];
   name: string;
   stickers: Sticker[];
   branding?: Branding;

@@ -34,6 +34,7 @@ export async function loadWorkspace(key: string): Promise<Pack | null> {
       else if (
         value?.schemaVersion === 1 &&
         Array.isArray(value.stickers) &&
+        (value.userUploads === undefined || Array.isArray(value.userUploads)) &&
         value.branding &&
         value.canvas
       )

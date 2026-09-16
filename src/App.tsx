@@ -168,7 +168,9 @@ export default function App({
   const [pack, setPack] = useState<Pack>(initialPack);
   const [tab, setTab] = useState("all");
   const [deletingStickers, setDeletingStickers] = useState(false);
-  const [uploads, setUploads] = useState<Sticker[]>([]);
+  const [uploads, setUploads] = useState<Sticker[]>(
+    () => initialPack.userUploads || [],
+  );
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadingBackground, setUploadingBackground] = useState(false);
   const [query, setQuery] = useState("");
@@ -229,7 +231,6 @@ export default function App({
     uploadingBackground ||
     editor.busy;
   const imageUploadRef = useRef<HTMLInputElement>(null);
-  const uploadSequence = useRef(0);
   const backgroundUploadRef = useRef<HTMLInputElement>(null);
   const categories = [
     { id: "all", name: "全部" },
@@ -253,8 +254,17 @@ export default function App({
         `category:${s.category}` === tab) &&
       s.name.toLowerCase().includes(query.toLowerCase()),
   );
+  const canManageLibrary =
+    !__STANDALONE__ || (allowStickerUploads && uploads.length > 0);
+  const uploadedStickerIds = new Set(uploads.map((sticker) => sticker.id));
+  const canDeleteSticker = (sticker: Sticker) =>
+    !__STANDALONE__ ||
+    (allowStickerUploads && uploadedStickerIds.has(sticker.id));
+  useEffect(() => {
+    if (!canManageLibrary) setDeletingStickers(false);
+  }, [canManageLibrary]);
   function removeSticker(sticker: Sticker) {
-    if (configBusy) return;
+    if (configBusy || !canDeleteSticker(sticker)) return;
     setPack((current) => ({
       ...current,
       stickers: current.stickers.filter((item) => item.id !== sticker.id),
@@ -281,9 +291,16 @@ export default function App({
       canvas: editor.snapshot(),
     };
   }
+  function currentWorkspace(): Pack {
+    return {
+      ...currentConfig(),
+      stickers: pack.stickers,
+      userUploads: uploads,
+    };
+  }
   useEffect(() => {
     if (!editor.ready || configBusy) return;
-    void autosave.save(currentConfig()).catch(() => {});
+    void autosave.save(currentWorkspace()).catch(() => {});
   }, [
     pack,
     uploads,
@@ -369,7 +386,7 @@ export default function App({
         pendingConfig === "reset"
           ? { name: "贴纸库", stickers: [], branding: { ...defaultBranding } }
           : pendingConfig;
-      const previous = currentConfig();
+      const previous = currentWorkspace();
       const device = { width: deviceSize.width, height: deviceSize.height };
       const saved = {
         ...next,
@@ -389,7 +406,6 @@ export default function App({
       setPack(next);
       setUploads([]);
       setBranding(normalizeBranding(next.branding || defaultBranding));
-      uploadSequence.current = 0;
       setDeletingStickers(false);
       setTab("all");
       setQuery("");
@@ -416,7 +432,7 @@ export default function App({
       const additions: Sticker[] = [];
       for (const file of files)
         additions.push({
-          id: `upload:${++uploadSequence.current}`,
+          id: `upload:${crypto.randomUUID()}`,
           name: file.name.replace(/\.[^.]+$/, ""),
           category: "我的上传",
           src: await readLocalImage(file),
@@ -584,16 +600,20 @@ export default function App({
           </h2>
         </div>
         <div className="library-actions">
-          <button
-            className="small-button"
-            aria-label="删除模式"
-            aria-pressed={deletingStickers}
-            disabled={configBusy || (!allStickers.length && !deletingStickers)}
-            onClick={() => setDeletingStickers((current) => !current)}
-          >
-            {deletingStickers ? <Check size={15} /> : <Trash2 size={15} />}
-            {deletingStickers ? "完成" : "删除"}
-          </button>
+          {canManageLibrary && (
+            <button
+              className="small-button"
+              aria-label="删除模式"
+              aria-pressed={deletingStickers}
+              disabled={
+                configBusy || (!allStickers.length && !deletingStickers)
+              }
+              onClick={() => setDeletingStickers((current) => !current)}
+            >
+              {deletingStickers ? <Check size={15} /> : <Trash2 size={15} />}
+              {deletingStickers ? "完成" : "删除"}
+            </button>
+          )}
           {allowZipUploads && (
             <button
               className="small-button"
@@ -658,7 +678,7 @@ export default function App({
                   </span>
                 )}
               </button>
-              {deletingStickers && (
+              {deletingStickers && canDeleteSticker(s) && (
                 <button
                   className="delete-library-sticker"
                   aria-label={`从贴纸库删除${s.name}`}
@@ -802,21 +822,6 @@ export default function App({
               </span>
             </div>
             <div className="history">
-              {expandedWorkspace.supported && (
-                <IconButton
-                  label={
-                    expandedWorkspace.enabled ? "退出展开工作区" : "展开工作区"
-                  }
-                  disabled={configBusy}
-                  onClick={expandedWorkspace.toggle}
-                >
-                  {expandedWorkspace.enabled ? (
-                    <Shrink size={18} />
-                  ) : (
-                    <Expand size={18} />
-                  )}
-                </IconButton>
-              )}
               <button
                 className="selection-toggle"
                 aria-label="多选模式"
@@ -926,6 +931,21 @@ export default function App({
               >
                 适应画布
               </button>
+              {expandedWorkspace.supported && (
+                <IconButton
+                  label={
+                    expandedWorkspace.enabled ? "退出展开工作区" : "展开工作区"
+                  }
+                  disabled={configBusy}
+                  onClick={expandedWorkspace.toggle}
+                >
+                  {expandedWorkspace.enabled ? (
+                    <Shrink size={18} />
+                  ) : (
+                    <Expand size={18} />
+                  )}
+                </IconButton>
+              )}
             </span>
           </footer>
         </section>
