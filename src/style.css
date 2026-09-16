@@ -1529,3 +1529,70 @@ img {
 .canvas-wrap {
   transform-origin: center;
 }
+
+/* Opt-in root scrolling lets iOS receive a real scroll gesture. The editor stays pinned. */
+html.workspace-expanded {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+}
+html.workspace-expanded body {
+  overflow: visible;
+  overscroll-behavior-y: auto;
+}
+.workspace-expanded #root {
+  min-height: calc(100lvh + 100dvh);
+}
+.workspace-expanded .app {
+  position: sticky;
+  top: 0;
+}
+.workspace-expand-guide {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  background: #f6f7f9f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: max(24px, env(safe-area-inset-top)) 24px
+    max(24px, env(safe-area-inset-bottom));
+  touch-action: pan-y;
+}
+.expand-guide-close {
+  position: absolute;
+  right: 18px;
+  top: max(18px, env(safe-area-inset-top));
+}
+.expand-swipe-area {
+  width: 100%;
+  min-height: 40dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.expand-swipe-area > svg {
+  color: var(--accent-text);
+}
+.expand-swipe-area strong {
+  font-size: 18px;
+  font-weight: 600;
+}
+.expand-swipe-area p,
+.expand-swipe-area > span {
+  margin: 0;
+  font-size: 12px;
+  color: #827b89;
+  text-align: center;
+}
+.expand-swipe-area > span {
+  min-height: 18px;
+}
+.workspace-expand-guide > .primary {
+  min-height: 44px;
+  padding: 0 24px;
+}

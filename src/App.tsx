@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   ArrowDownToLine,
+  ArrowUp,
+  Expand,
+  Shrink,
   ArrowUpRight,
   Check,
   CheckCheck,
@@ -41,6 +44,7 @@ import CategoryTabs from "./CategoryTabs";
 import { exportStandalone, readStandalone } from "./config";
 import { DEFAULT_THEME, themeStyle } from "./theme";
 import { useEditor } from "./useEditor";
+import { useExpandedWorkspace } from "./useExpandedWorkspace";
 import { useDeviceSize } from "./useDeviceSize";
 import { useAutoSave } from "./storage";
 const defaultBranding: Branding = {
@@ -193,6 +197,7 @@ export default function App({
     initialPack.canvas,
   );
   const deviceSize = useDeviceSize();
+  const expandedWorkspace = useExpandedWorkspace();
   const autosave = useAutoSave(storageKey, persistent);
   useEffect(() => {
     document.title = siteBranding.title || "贴贴";
@@ -712,7 +717,7 @@ export default function App({
         // Keep editor controls usable while a sticker is selected.
         if (
           event.target.closest(
-            '.canvas-wrap, .object-tools, button, a, input, select, textarea, label, [role="dialog"], .overlay',
+            '.canvas-wrap, .object-tools, .workspace-expand-guide, button, a, input, select, textarea, label, [role="dialog"], .overlay',
           )
         )
           return;
@@ -798,6 +803,21 @@ export default function App({
               </span>
             </div>
             <div className="history">
+              {expandedWorkspace.supported && (
+                <IconButton
+                  label={
+                    expandedWorkspace.enabled ? "退出展开工作区" : "展开工作区"
+                  }
+                  disabled={configBusy}
+                  onClick={expandedWorkspace.toggle}
+                >
+                  {expandedWorkspace.enabled ? (
+                    <Shrink size={18} />
+                  ) : (
+                    <Expand size={18} />
+                  )}
+                </IconButton>
+              )}
               <button
                 className="selection-toggle"
                 aria-label="多选模式"
@@ -925,6 +945,35 @@ export default function App({
           画布设置
         </button>
       </nav>
+      {expandedWorkspace.guiding && (
+        <div
+          className="workspace-expand-guide"
+          role="region"
+          aria-label="展开工作区引导"
+        >
+          <button
+            className="expand-guide-close icon-button"
+            aria-label="退出展开工作区引导"
+            onClick={expandedWorkspace.exit}
+          >
+            <X size={20} />
+          </button>
+          <div className="expand-swipe-area">
+            <ArrowUp size={32} />
+            <strong>在这里向上滑动</strong>
+            <p>尝试收起浏览器地址栏，获得更多空间</p>
+            <span role="status">
+              {expandedWorkspace.scrolled ? "若地址栏未收起，可再向上滑动" : ""}
+            </span>
+          </div>
+          <button
+            className="primary"
+            onClick={expandedWorkspace.continueEditing}
+          >
+            继续编辑
+          </button>
+        </div>
+      )}
       <Modal
         open={drawer !== null}
         onOpenChange={(open) => {
