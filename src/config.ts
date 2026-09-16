@@ -1,6 +1,11 @@
 import JSZip from "jszip";
 import deploymentGuide from "../docs/github-pages.txt?raw";
-import { saveBlob, type Pack, type CanvasSnapshot } from "./library";
+import {
+  normalizeBranding,
+  saveBlob,
+  type Pack,
+  type CanvasSnapshot,
+} from "./library";
 
 const maxFileSize = 400 * 1024 * 1024;
 function record(value: unknown): Record<string, unknown> {
@@ -104,11 +109,14 @@ async function validateConfig(value: unknown): Promise<Pack> {
       !/^#[0-9a-f]{6}$/i.test(brand.themeColor))
   )
     throw new Error("配置主题色无效");
-  if (
-    brand.allowUploads !== undefined &&
-    typeof brand.allowUploads !== "boolean"
-  )
-    throw new Error("上传设置无效");
+  for (const key of [
+    "allowUploads",
+    "allowStickerUploads",
+    "allowBackgroundUploads",
+  ]) {
+    if (brand[key] !== undefined && typeof brand[key] !== "boolean")
+      throw new Error("上传设置无效");
+  }
   if (
     brand.allowZipUploads !== undefined &&
     typeof brand.allowZipUploads !== "boolean"
@@ -165,14 +173,18 @@ async function validateConfig(value: unknown): Promise<Pack> {
     schemaVersion: 1,
     name: text(input.name, 1000),
     stickers,
-    branding: {
+    branding: normalizeBranding({
       title,
       logo,
       themeColor: brand.themeColor as string | undefined,
       themeText: brand.themeText as "light" | "dark" | undefined,
-      allowUploads: brand.allowUploads === true,
+      allowUploads: brand.allowUploads as boolean | undefined,
+      allowStickerUploads: brand.allowStickerUploads as boolean | undefined,
+      allowBackgroundUploads: brand.allowBackgroundUploads as
+        | boolean
+        | undefined,
       allowZipUploads: brand.allowZipUploads === true,
-    },
+    }),
     canvas,
   };
 }

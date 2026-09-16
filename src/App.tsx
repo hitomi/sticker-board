@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import {
   readZip,
+  normalizeBranding,
   saveBlob,
   readLocalImage,
   type Pack,
@@ -45,7 +46,8 @@ import { useAutoSave } from "./storage";
 const defaultBranding: Branding = {
   title: "贴贴",
   themeColor: DEFAULT_THEME,
-  allowUploads: false,
+  allowStickerUploads: false,
+  allowBackgroundUploads: false,
   allowZipUploads: false,
 };
 const defaultFavicon =
@@ -176,11 +178,14 @@ export default function App({
   );
   const [exporting, setExporting] = useState(false);
   const [configError, setConfigError] = useState("");
-  const [branding, setBranding] = useState<Branding>(
-    () => pack.branding || { ...defaultBranding },
+  const [branding, setBranding] = useState<Branding>(() =>
+    normalizeBranding(pack.branding || defaultBranding),
   );
   const siteBranding = branding;
-  const allowImageUploads = !__STANDALONE__ || !!siteBranding?.allowUploads;
+  const allowStickerUploads =
+    !__STANDALONE__ || !!siteBranding.allowStickerUploads;
+  const allowBackgroundUploads =
+    !__STANDALONE__ || !!siteBranding.allowBackgroundUploads;
   const allowZipUploads = !__STANDALONE__ || !!siteBranding?.allowZipUploads;
   const editor = useEditor(
     report,
@@ -224,9 +229,9 @@ export default function App({
   const backgroundUploadRef = useRef<HTMLInputElement>(null);
   const categories = [
     { id: "all", name: "全部" },
-    ...(allowImageUploads ? [{ id: "uploads", name: "我的上传" }] : []),
+    ...(allowStickerUploads ? [{ id: "uploads", name: "我的上传" }] : []),
     ...[...new Set(pack.stickers.map((s) => s.category))]
-      .filter((name) => !allowImageUploads || name !== "我的上传")
+      .filter((name) => !allowStickerUploads || name !== "我的上传")
       .map((name) => ({
         id: `category:${name}`,
         name,
@@ -379,7 +384,7 @@ export default function App({
       }
       setPack(next);
       setUploads([]);
-      setBranding(next.branding || { ...defaultBranding });
+      setBranding(normalizeBranding(next.branding || defaultBranding));
       uploadSequence.current = 0;
       setDeletingStickers(false);
       setTab("all");
@@ -532,7 +537,7 @@ export default function App({
           />
         </label>
       </div>
-      {allowImageUploads && (
+      {allowBackgroundUploads && (
         <div className="background-upload">
           <button
             className="background-upload-button"
@@ -616,7 +621,7 @@ export default function App({
         )}
       </div>
       <CategoryTabs categories={categories} value={tab} onChange={setTab} />
-      {tab === "uploads" && allowImageUploads && (
+      {tab === "uploads" && allowStickerUploads && (
         <button
           className="upload-personal"
           disabled={uploadingImages}
@@ -1178,17 +1183,39 @@ export default function App({
         >
           <label className="upload-permission">
             <span>
-              <strong>允许用户上传图片</strong>
-              <small>贴纸与背景图片</small>
+              <strong>允许用户上传贴纸</strong>
+              <small>添加到“我的上传”分类</small>
             </span>
             <input
               type="checkbox"
               role="switch"
-              aria-label="允许用户上传图片"
-              checked={!!branding.allowUploads}
+              aria-label="允许用户上传贴纸"
+              checked={!!branding.allowStickerUploads}
               disabled={configBusy}
               onChange={(event) =>
-                setBranding({ ...branding, allowUploads: event.target.checked })
+                setBranding({
+                  ...branding,
+                  allowStickerUploads: event.target.checked,
+                })
+              }
+            />
+          </label>
+          <label className="upload-permission">
+            <span>
+              <strong>允许用户上传背景</strong>
+              <small>设置自定义背景图片</small>
+            </span>
+            <input
+              type="checkbox"
+              role="switch"
+              aria-label="允许用户上传背景"
+              checked={!!branding.allowBackgroundUploads}
+              disabled={configBusy}
+              onChange={(event) =>
+                setBranding({
+                  ...branding,
+                  allowBackgroundUploads: event.target.checked,
+                })
               }
             />
           </label>
@@ -1234,32 +1261,32 @@ export default function App({
           </button>
         </Modal>
       )}
-      {allowImageUploads && (
-        <>
-          <input
-            hidden
-            type="file"
-            multiple
-            accept=".png,.jpg,.jpeg,.webp,.gif,.svg,.avif"
-            ref={imageUploadRef}
-            aria-label="上传贴纸图片"
-            onChange={(event) => {
-              void uploadImages(Array.from(event.target.files || []));
-              event.target.value = "";
-            }}
-          />
-          <input
-            hidden
-            type="file"
-            accept=".png,.jpg,.jpeg,.webp,.gif,.svg,.avif"
-            ref={backgroundUploadRef}
-            aria-label="上传背景图片文件"
-            onChange={(event) => {
-              void uploadBackground(event.target.files?.[0]);
-              event.target.value = "";
-            }}
-          />
-        </>
+      {allowStickerUploads && (
+        <input
+          hidden
+          type="file"
+          multiple
+          accept=".png,.jpg,.jpeg,.webp,.gif,.svg,.avif"
+          ref={imageUploadRef}
+          aria-label="上传贴纸图片"
+          onChange={(event) => {
+            void uploadImages(Array.from(event.target.files || []));
+            event.target.value = "";
+          }}
+        />
+      )}
+      {allowBackgroundUploads && (
+        <input
+          hidden
+          type="file"
+          accept=".png,.jpg,.jpeg,.webp,.gif,.svg,.avif"
+          ref={backgroundUploadRef}
+          aria-label="上传背景图片文件"
+          onChange={(event) => {
+            void uploadBackground(event.target.files?.[0]);
+            event.target.value = "";
+          }}
+        />
       )}
       {notice && (
         <div className="toast" role="status">

@@ -10,9 +10,21 @@ export type Branding = {
   logo?: string;
   themeColor?: string;
   themeText?: "light" | "dark";
+  /** Legacy combined permission; migrate when loading older workspaces. */
   allowUploads?: boolean;
+  allowStickerUploads?: boolean;
+  allowBackgroundUploads?: boolean;
   allowZipUploads?: boolean;
 };
+export function normalizeBranding(branding: Branding): Branding {
+  const { allowUploads, ...current } = branding;
+  return {
+    ...current,
+    allowStickerUploads: branding.allowStickerUploads ?? allowUploads ?? false,
+    allowBackgroundUploads:
+      branding.allowBackgroundUploads ?? allowUploads ?? false,
+  };
+}
 export type CanvasSnapshot = {
   width: number;
   height: number;
