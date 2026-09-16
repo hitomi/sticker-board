@@ -1,4 +1,4 @@
-import { Canvas, Point, type FabricObject } from "fabric";
+import { Canvas, Point, util, type FabricObject, type Transform } from "fabric";
 
 type Options = {
   blocked: () => boolean;
@@ -18,7 +18,7 @@ const rotate = (p: Point, radians: number) =>
     p.x * Math.sin(radians) + p.y * Math.cos(radians),
   );
 
-// Own all touch gestures, including touches on handles. Fabric keeps mouse/pen controls.
+// Route one-finger handles through Fabric control handlers, then take over for two-finger gestures.
 export function attachTouchGestures(
   canvas: Canvas,
   stage: HTMLElement,
@@ -30,6 +30,7 @@ export function attachTouchGestures(
   let changed = false;
   let active = false;
   let touchingControl = false;
+  let controlTransform: Transform | undefined;
   let target: FabricObject | undefined;
   let tapTarget: FabricObject | undefined;
   let tapSelection: FabricObject | undefined;
@@ -104,9 +105,11 @@ export function attachTouchGestures(
     if (!active) {
       const selected = canvas.getActiveObject();
       const onCanvas = event.target === canvas.upperCanvasEl;
-      touchingControl = !!(
-        onCanvas && selected?.findControl(canvas.getViewportPoint(event), true)
-      );
+      const control = onCanvas
+        ? selected?.findControl(canvas.getViewportPoint(event), true)
+        : undefined;
+      touchingControl = !!control;
+
       const point = canvas.getScenePoint(event);
       tapTarget = onCanvas
         ? canvas.searchPossibleTargets(canvas.getObjects(), point).target
@@ -120,6 +123,52 @@ export function attachTouchGestures(
       canDragTarget = selected ? hitSelection : !!tapTarget;
       if (!selected && target && !options.multiSelect())
         options.select([target]);
+      controlTransform = undefined;
+      if (control && target) {
+        const action = control.control.getActionName(
+          event,
+          control.control,
+          target,
+        );
+        const centered =
+          action === "rotate"
+            ? canvas.centeredRotation || target.centeredRotation
+            : canvas.centeredScaling || target.centeredScaling;
+        const origin = centered
+          ? { x: "center" as const, y: "center" as const }
+          : control.control.getTransformAnchorPoint();
+        controlTransform = {
+          target,
+          action,
+          corner: control.key,
+          actionHandler: control.control
+            .getActionHandler(event, target, control.control)
+            ?.bind(control.control),
+          scaleX: target.scaleX,
+          scaleY: target.scaleY,
+          skewX: target.skewX,
+          skewY: target.skewY,
+          offsetX: point.x - target.left,
+          offsetY: point.y - target.top,
+          originX: origin.x,
+          originY: origin.y,
+          ex: point.x,
+          ey: point.y,
+          lastX: point.x,
+          lastY: point.y,
+          theta: util.degreesToRadians(target.angle),
+          width: target.width,
+          height: target.height,
+          shiftKey: event.shiftKey,
+          altKey: event.altKey,
+          original: {
+            ...util.saveObjectTransform(target),
+            originX: origin.x,
+            originY: origin.y,
+          },
+          actionPerformed: false,
+        };
+      }
       changed = false;
       moved = false;
       paired = false;
@@ -135,6 +184,7 @@ export function attachTouchGestures(
     stage.setPointerCapture(event.pointerId);
     if (pointers.size === 2 && !waitingForRelease) {
       paired = true;
+      controlTransform = undefined;
       start = [...pointers.values()].map(client);
       startView = { ...view };
       const rect = wrapper.getBoundingClientRect();
@@ -154,7 +204,17 @@ export function attachTouchGestures(
     if (pointers.size === 1) {
       if (distance(points[0], start[0]) < 3 && !moved) return;
       moved = true;
-      if (target && pose && canDragTarget && !options.multiSelect()) {
+      if (controlTransform?.actionHandler) {
+        const point = scene(points[0]);
+        const performed = controlTransform.actionHandler(
+          event,
+          controlTransform,
+          point.x,
+          point.y,
+        );
+        controlTransform.actionPerformed ||= performed;
+        changed ||= performed;
+      } else if (target && pose && canDragTarget && !options.multiSelect()) {
         target.setPositionByOrigin(
           pose.center.add(scene(points[0]).subtract(scene(start[0]))),
           "center",
