@@ -1,0 +1,38 @@
+{
+  "name": "sticker-board",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "runtime": "vite build --mode standalone && node scripts/runtime.mjs",
+    "predev": "npm run runtime",
+    "dev": "vite",
+    "build": "tsc && npm run runtime && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "check": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.23",
+    "fabric": "^7.4.0",
+    "jszip": "^3.10.2",
+    "lucide-react": "^1.46.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "vite-plugin-singlefile": "^2.3.3"
+  },
+  "private": true
+}

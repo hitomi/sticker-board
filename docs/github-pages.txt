@@ -1,0 +1,128 @@
+贴纸小站 · GitHub Pages 发布教程
+
+这份教程教你把刚刚导出的贴纸小站变成一个可以分享的网址。
+全程使用浏览器，不需要写代码或安装开发工具。建议在电脑上操作。
+GitHub 的按钮通常是英文，下面同时标注英文名称和中文意思。
+
+一、准备好文件和账号
+
+1. 将下载的“……-独立版.zip”解压。
+   Windows：右键点击 ZIP，选择“全部解压缩”。
+   Mac：双击 ZIP。
+   打开解压后的文件夹，找到 index.html 和这份使用说明。
+
+2. index.html 就是整个贴纸网站，已经包含图片和设置。
+   上传时只需要这个文件，不需要单独上传贴纸图片。
+   不要上传 ZIP，也不要把装着 index.html 的整个文件夹一起上传。
+   文件名必须保留为全小写的 index.html，不能是 index (1).html 或 index.html.txt。
+   可以先用浏览器打开它，确认标题、贴纸和画布内容正确。
+
+3. 打开 https://github.com ，点击 Sign up（注册），按提示完成注册和邮箱验证。
+   已有账号则点击 Sign in（登录）。记住你的用户名。
+
+4. 保留原来的独立版 ZIP，并收藏制作这个独立版的贴贴编辑器网址。
+   以后修改网站需要回到那个编辑器；发布出来的独立版没有设置和导出入口。
+
+本教程使用免费账号可用的公开仓库：可以把“仓库”理解为存放网站文件的文件夹。
+发布后，别人可以访问网站，也可以查看、下载其中的素材。请只放准备公开的图片。
+
+二、第一次发布：新建一个仓库
+
+1. 登录后打开 https://github.com/new 。
+2. Owner（所有者）选择你自己的账号。
+3. Repository name（仓库名称）填写 my-stickers。
+   如果提示名称已被使用，换一个，例如 my-stickers-2。建议使用英文字母、数字和短横线。
+4. Description（介绍）可以留空。
+5. 可见性选择 Public（公开）。
+6. 打开 Add README（添加说明文件）开关；有的界面显示为勾选框。
+   这样创建后会直接出现文件列表，方便下一步上传。
+7. 其余选项保持默认，点击 Create repository（创建仓库）。
+
+三、把网站文件上传到 GitHub
+
+1. 创建完成后，你会看到仓库的 Code（文件）页面，其中有 README.md。
+2. 在文件列表上方点击 Add file（添加文件）→ Upload files（上传文件）。
+3. 点击 choose your files（选择文件），选择解压后的 index.html。
+   也可以将这个文件拖到上传区域。
+4. 等待文件上传完成，确认列表中显示 index.html。
+5. 在下方 Commit changes（保存更改）区域填写说明，例如“首次发布贴纸小站”。
+   如果有分支选项，选择 Commit directly to the main branch（直接保存到 main）。
+   点击绿色 Commit changes 按钮完成保存。
+6. 回到文件列表后，确认 index.html 与 README.md 并排出现。
+   不要进入或新建任何文件夹；这里就是后面所说的“根目录”。
+
+四、开启 GitHub Pages，获得网站地址
+
+1. 点击仓库上方的 Settings（设置）。这是仓库的设置，不是头像菜单里的账号设置。
+   窗口较窄时，Settings 可能藏在顶部的更多菜单里。
+2. 在左侧菜单找到 Pages 并点击。
+3. 找到 Build and deployment（构建和部署）：
+   Source（来源）：选择 Deploy from a branch（从分支发布）。
+   Branch（分支）：选择 main。
+   旁边的文件夹：选择 / (root)，也就是刚才上传文件的位置。
+4. 点击 Save（保存）。
+5. 等待发布，可能需要最多约 10 分钟。刷新这个 Pages 设置页面。
+   出现 Visit site（访问网站）后，点击它打开你的贴纸小站。
+6. 复制打开后浏览器地址栏中的网址发给朋友。
+   例如，用户名是 xiaoming、仓库名是 my-stickers，地址通常是：
+   https://xiaoming.github.io/my-stickers/
+   请以 Pages 页面给出的实际地址为准，不要直接复制上面的示例。
+
+注意：github.com/用户名/仓库名 是文件管理页面；github.io 地址才是给朋友使用的网站。
+
+五、以后如何更新网站
+
+不需要再创建仓库，也不用重新设置 Pages。替换原仓库里的 index.html 就可以更新，网址不变。
+
+1. 回到你收藏的贴贴编辑器。
+2. 打开“设置”→“恢复配置”，选择上一次导出的独立版 ZIP 或解压后的 index.html。
+   确认文件正确后点击“替换并恢复”。这会替换编辑器当前的设置、贴纸库和画布；
+   如果当前还有想保留的作品，先导出一份备份。
+   如果编辑器里已经是你准备更新的内容，可以跳过恢复步骤。
+3. 修改贴纸、标题、Logo、主题色或画布，并确认页面效果。
+4. 点击页面顶部的“导出独立版”，检查“允许用户上传图片”和“允许用户上传 ZIP”的开关，
+   再点击“下载独立版 ZIP”。解压这次下载的新文件。
+5. 打开原来的 GitHub 仓库，点击 Code 回到最外层文件列表，确认当前分支是 main。
+6. 点击 Add file → Upload files，上传新的 index.html。
+   文件名和位置与旧文件一致时，这次保存会替换旧版本，不需要先删除旧文件。
+   不要把它改名为 index-new.html，也不要上传 ZIP。
+7. 填写更改说明，例如“更新贴纸和主题色”，选择直接保存到 main（如有此选项），
+   点击 Commit changes。
+8. 等待重新发布，再打开原来的网站地址检查效果。
+   可以从 Settings → Pages → Visit site 进入，也可以使用之前收藏的网址。
+9. 将这次导出的 ZIP 单独备份，标上日期，方便下一次修改。
+
+在编辑器里修改内容、或者访客在独立版里上传图片，只会保存在各自的浏览器里，
+不会自动更新 GitHub 上的网站。要让所有人看到新版本，需要完成上面的重新导出和上传。
+新导出的版本会使用新的本地保存标识；访客打开更新后的版本时会从这次导出的画布开始。
+
+六、遇到问题时
+
+• 找不到 main：先回到 Code 页面，确认已创建 README 或成功上传并保存了文件，再刷新 Pages 设置。
+  如果创建时默认分支叫别的名字，就在上传和 Pages 设置中都使用那个实际分支。
+
+• 打开后显示 404（页面不存在）：先等待发布完成；再检查文件名是否准确为 index.html，
+  它是否与 README.md 在同一层，以及 Pages 是否选择了对应分支和 / (root)。
+  请使用 Pages 页面给出的完整网站地址。
+
+• 看到仓库说明而不是贴纸页面：检查是否只上传了 ZIP，或把 index.html 放进了子文件夹。
+  回到仓库最外层，重新上传解压后的 index.html。
+
+• 上传提示文件太大：GitHub 网页上传单个文件的上限是 25 MiB（约 26 MB）。
+  检查的是解压后的 index.html 大小，不是 ZIP 大小。图片都包含在这个文件中。
+  请回编辑器减少素材，或先将原图缩小、压缩后重新导入，再导出。
+  仅把 ZIP 压得更小无法解决这个限制。
+
+• 更新后仍看到旧内容：先确认 Commit changes 已完成，再等待发布并刷新网站。
+  电脑可用 Ctrl+Shift+R（Mac 用 Command+Shift+R）强制刷新，或用无痕窗口检查。
+  不必清空浏览器数据，以免丢失保存在本机的作品。
+
+• 等待后仍未发布：点击仓库顶部 Actions（运行记录），查看最新的 Pages 发布记录。
+  黄色表示仍在进行，绿色对勾表示成功；红色表示失败，可点击查看错误。
+  同时检查 GitHub 注册邮箱是否已验证。需要求助时，提供错误信息和仓库网址。
+
+GitHub 官方说明（按钮位置变化时可参考）
+创建仓库：https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository
+上传文件：https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository
+设置发布来源：https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
+创建和查看网站：https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site
