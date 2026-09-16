@@ -115,7 +115,7 @@ async function validateConfig(value: unknown): Promise<Pack> {
     "allowBackgroundUploads",
   ]) {
     if (brand[key] !== undefined && typeof brand[key] !== "boolean")
-      throw new Error("图片添加设置无效");
+      throw new Error("图片导入设置无效");
   }
   if (
     brand.allowZipUploads !== undefined &&

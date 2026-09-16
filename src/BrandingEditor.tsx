@@ -171,7 +171,7 @@ export default function BrandingEditor({
         ref={logoInput}
         type="file"
         accept=".png,.jpg,.jpeg,.webp,.svg,.ico"
-        aria-label="添加 Logo 图片"
+        aria-label="导入 Logo 图片"
         onChange={(e) => {
           void select(e.target.files?.[0]);
           e.target.value = "";

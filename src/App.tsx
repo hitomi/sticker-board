@@ -234,13 +234,13 @@ export default function App({
   const backgroundUploadRef = useRef<HTMLInputElement>(null);
   const categories = [
     { id: "all", name: "全部" },
-    ...(allowStickerUploads ? [{ id: "uploads", name: "我的添加" }] : []),
+    ...(allowStickerUploads ? [{ id: "uploads", name: "我的导入" }] : []),
     ...[...new Set(pack.stickers.map((s) => s.category))]
       .filter((name) => !allowStickerUploads || name !== "我的上传")
       .map((name) => ({
         id: `category:${name}`,
         // Keep stored category names compatible with existing workspaces and exports.
-        name: name === "我的上传" ? "我的添加" : name,
+        name: name === "我的上传" ? "我的导入" : name,
       })),
   ];
   const allStickers = [...pack.stickers, ...uploads];
@@ -429,7 +429,7 @@ export default function App({
     setUploadingImages(true);
     try {
       if (files.reduce((sum, file) => sum + file.size, 0) > 100 * 1024 * 1024)
-        throw new Error("一次添加不能超过 100 MB，请分批选择");
+        throw new Error("一次导入不能超过 100 MB，请分批选择");
       const additions: Sticker[] = [];
       for (const file of files)
         additions.push({
@@ -442,7 +442,7 @@ export default function App({
       setTab("uploads");
       setQuery("");
     } catch (error) {
-      report(error instanceof Error ? error.message : "图片添加失败，请重试");
+      report(error instanceof Error ? error.message : "图片导入失败，请重试");
     } finally {
       setUploadingImages(false);
     }
@@ -576,7 +576,7 @@ export default function App({
               ? "正在载入…"
               : editor.backgroundImage
                 ? "更换背景图片"
-                : "添加背景图片"}
+                : "导入背景图片"}
           </button>
           {editor.backgroundImage && (
             <IconButton
@@ -647,19 +647,24 @@ export default function App({
       </div>
       <CategoryTabs categories={categories} value={tab} onChange={setTab} />
       {tab === "uploads" && allowStickerUploads && (
-        <button
-          className="upload-personal"
-          disabled={uploadingImages}
-          onClick={() => imageUploadRef.current?.click()}
-        >
-          {uploadingImages ? (
-            <LoaderCircle size={16} className="spin" />
-          ) : (
-            <ImagePlus size={16} />
-          )}
-          {uploadingImages ? "正在载入…" : "添加图片"}
-          <span>可多选</span>
-        </button>
+        <>
+          <button
+            className="upload-personal"
+            disabled={uploadingImages}
+            onClick={() => imageUploadRef.current?.click()}
+          >
+            {uploadingImages ? (
+              <LoaderCircle size={16} className="spin" />
+            ) : (
+              <ImagePlus size={16} />
+            )}
+            {uploadingImages ? "正在载入…" : "导入图片"}
+            <span>可多选</span>
+          </button>
+          <p className="local-file-hint">
+            文件仅在本地处理，不会上传到服务器
+          </p>
+        </>
       )}
       <div className="sticker-scroll">
         <div className="sticker-grid">
@@ -1259,13 +1264,13 @@ export default function App({
         >
           <label className="upload-permission">
             <span>
-              <strong>允许用户添加贴纸</strong>
-              <small>添加到“我的添加”分类</small>
+              <strong>允许用户导入贴纸</strong>
+              <small>导入到“我的导入”分类</small>
             </span>
             <input
               type="checkbox"
               role="switch"
-              aria-label="允许用户添加贴纸"
+              aria-label="允许用户导入贴纸"
               checked={!!branding.allowStickerUploads}
               disabled={configBusy}
               onChange={(event) =>
@@ -1278,13 +1283,13 @@ export default function App({
           </label>
           <label className="upload-permission">
             <span>
-              <strong>允许用户添加背景</strong>
+              <strong>允许用户导入背景</strong>
               <small>设置自定义背景图片</small>
             </span>
             <input
               type="checkbox"
               role="switch"
-              aria-label="允许用户添加背景"
+              aria-label="允许用户导入背景"
               checked={!!branding.allowBackgroundUploads}
               disabled={configBusy}
               onChange={(event) =>
@@ -1344,7 +1349,7 @@ export default function App({
           multiple
           accept=".png,.jpg,.jpeg,.webp,.gif,.svg,.avif"
           ref={imageUploadRef}
-          aria-label="添加贴纸图片"
+          aria-label="导入贴纸图片"
           onChange={(event) => {
             void uploadImages(Array.from(event.target.files || []));
             event.target.value = "";
@@ -1357,7 +1362,7 @@ export default function App({
           type="file"
           accept=".png,.jpg,.jpeg,.webp,.gif,.svg,.avif"
           ref={backgroundUploadRef}
-          aria-label="添加背景图片文件"
+          aria-label="导入背景图片文件"
           onChange={(event) => {
             void uploadBackground(event.target.files?.[0]);
             event.target.value = "";

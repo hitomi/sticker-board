@@ -1253,6 +1253,13 @@ img {
   flex-shrink: 0;
   font-size: 11px;
 }
+.local-file-hint {
+  margin: -4px 0 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #777582;
+  flex-shrink: 0;
+}
 .upload-personal > span {
   margin-left: auto;
   font-size: 10px;
