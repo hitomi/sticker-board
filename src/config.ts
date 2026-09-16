@@ -115,13 +115,13 @@ async function validateConfig(value: unknown): Promise<Pack> {
     "allowBackgroundUploads",
   ]) {
     if (brand[key] !== undefined && typeof brand[key] !== "boolean")
-      throw new Error("上传设置无效");
+      throw new Error("图片添加设置无效");
   }
   if (
     brand.allowZipUploads !== undefined &&
     typeof brand.allowZipUploads !== "boolean"
   )
-    throw new Error("ZIP 上传设置无效");
+    throw new Error("ZIP 导入设置无效");
   const logo = brand.logo === undefined ? undefined : imageSource(brand.logo);
   if (logo) sources.add(logo);
   let canvas: CanvasSnapshot | undefined;
