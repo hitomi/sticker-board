@@ -1596,3 +1596,30 @@ html.workspace-expanded body {
   min-height: 44px;
   padding: 0 24px;
 }
+
+.selection-dismiss-hint {
+  white-space: nowrap;
+  color: #827b89;
+}
+@media (max-width: 1100px) {
+  .object-tools {
+    bottom: 71px;
+  }
+  .canvas-footer {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 24px 32px;
+    height: 64px;
+    align-content: center;
+  }
+  .canvas-footer > span:first-child {
+    gap: 5px;
+    white-space: nowrap;
+  }
+  .canvas-footer > .desktop-hint {
+    display: none;
+  }
+  .canvas-footer > span:last-child {
+    justify-content: flex-end;
+  }
+}

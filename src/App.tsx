@@ -902,7 +902,14 @@ export default function App({
             <span>
               <span className="status-dot" />
               {editor.count} 张贴纸
-              {editor.selectedCount > 0 && ` · 已选 ${editor.selectedCount} 张`}
+              {editor.selectedCount > 0 && (
+                <>
+                  <span>· 已选 {editor.selectedCount} 张</span>
+                  <span className="selection-dismiss-hint">
+                    点击空白处取消选择
+                  </span>
+                </>
+              )}
             </span>
             <span className="desktop-hint">
               {editor.multiSelect

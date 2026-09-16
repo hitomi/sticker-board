@@ -12,12 +12,6 @@ type Pose = { center: Point; scaleX: number; scaleY: number; angle: number };
 const distance = (a: Point, b: Point) => Math.hypot(b.x - a.x, b.y - a.y);
 const angle = (a: Point, b: Point) => Math.atan2(b.y - a.y, b.x - a.x);
 const midpoint = (a: Point, b: Point) => a.add(b).scalarDivide(2);
-const rotate = (p: Point, radians: number) =>
-  new Point(
-    p.x * Math.cos(radians) - p.y * Math.sin(radians),
-    p.x * Math.sin(radians) + p.y * Math.cos(radians),
-  );
-
 // Route one-finger handles through Fabric control handlers, then take over for two-finger gestures.
 export function attachTouchGestures(
   canvas: Canvas,
@@ -253,12 +247,8 @@ export function attachTouchGestures(
           0.001 / Math.min(pose.scaleX, pose.scaleY),
           factor,
         );
-        const center = scene(to).add(
-          rotate(
-            pose.center.subtract(scene(from)).scalarMultiply(scale),
-            radians,
-          ),
-        );
+        // Scale/rotate around the selection itself; finger midpoint movement only translates it.
+        const center = pose.center.add(scene(to).subtract(scene(from)));
         target.set({
           scaleX: pose.scaleX * scale,
           scaleY: pose.scaleY * scale,
