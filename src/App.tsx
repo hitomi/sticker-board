@@ -192,6 +192,7 @@ export default function App({
     }
   }, [siteBranding]);
   const [custom, setCustom] = useState(false);
+  const [clearCanvasOpen, setClearCanvasOpen] = useState(false);
   const [width, setWidth] = useState("1170");
   const [height, setHeight] = useState("2532");
   const [sizeError, setSizeError] = useState("");
@@ -774,6 +775,13 @@ export default function App({
                 {editor.multiSelect ? "完成" : "多选"}
               </button>
               <IconButton
+                label="清空画布"
+                disabled={!editor.count || configBusy}
+                onClick={() => setClearCanvasOpen(true)}
+              >
+                <Trash2 size={18} />
+              </IconButton>
+              <IconButton
                 label="全选贴纸"
                 disabled={!editor.count || editor.busy}
                 onClick={editor.selectAll}
@@ -889,6 +897,30 @@ export default function App({
         drawer
       >
         {drawer === "stickers" ? library : settings}
+      </Modal>
+      <Modal
+        open={clearCanvasOpen}
+        onOpenChange={setClearCanvasOpen}
+        title="清空画布？"
+        description={`将移除画布上的 ${editor.count} 张贴纸，保留背景、尺寸和贴纸库。清空后可以撤销。`}
+      >
+        <div className="confirm-actions">
+          <button
+            className="small-button"
+            onClick={() => setClearCanvasOpen(false)}
+          >
+            取消
+          </button>
+          <button
+            className="primary"
+            disabled={!editor.count || configBusy}
+            onClick={() => {
+              if (editor.clearStickers()) setClearCanvasOpen(false);
+            }}
+          >
+            确认清空
+          </button>
+        </div>
       </Modal>
       <Modal
         open={custom}

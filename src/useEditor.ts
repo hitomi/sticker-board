@@ -395,6 +395,17 @@ export function useEditor(
     c.requestRenderAll();
     commit();
   }
+  function clearStickers() {
+    const c = canvas.current;
+    if (!c || locked.current || !c.getObjects().length) return false;
+    c.discardActiveObject();
+    c.remove(...c.getObjects());
+    multiSelectRef.current = false;
+    setMultiSelect(false);
+    c.requestRenderAll();
+    commit();
+    return true;
+  }
   async function download() {
     const c = canvas.current;
     if (!c || locked.current) return;
@@ -474,6 +485,7 @@ export function useEditor(
     add,
     action,
     download,
+    clearStickers,
     travel,
     historyState,
     snapshot,
