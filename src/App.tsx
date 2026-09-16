@@ -36,6 +36,7 @@ import {
   type Branding,
 } from "./library";
 import BrandingEditor from "./BrandingEditor";
+import CategoryTabs from "./CategoryTabs";
 import { exportStandalone, readStandalone } from "./config";
 import { DEFAULT_THEME, themeStyle } from "./theme";
 import { useEditor } from "./useEditor";
@@ -614,18 +615,7 @@ export default function App({
           </button>
         )}
       </div>
-      <div className="tabs" role="tablist" aria-label="贴纸分类">
-        {categories.map((c) => (
-          <button
-            role="tab"
-            aria-selected={tab === c.id}
-            key={c.id}
-            onClick={() => setTab(c.id)}
-          >
-            {c.name}
-          </button>
-        ))}
-      </div>
+      <CategoryTabs categories={categories} value={tab} onChange={setTab} />
       {tab === "uploads" && allowImageUploads && (
         <button
           className="upload-personal"

@@ -17,6 +17,7 @@
   "type": "module",
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",
+    "@radix-ui/react-popover": "^1.1.23",
     "fabric": "^7.4.0",
     "jszip": "^3.10.2",
     "lucide-react": "^1.46.0",
