@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
-  ArrowDown,
   ArrowUp,
   Expand,
   Shrink,
@@ -10,8 +9,6 @@ import {
   CheckCheck,
   Copy,
   Download,
-  FlipHorizontal2,
-  FlipVertical2,
   ImagePlus,
   LoaderCircle,
   Maximize,
@@ -20,7 +17,6 @@ import {
   Palette,
   Plus,
   Redo2,
-  RotateCw,
   Search,
   Settings2,
   Sparkles,
@@ -39,6 +35,7 @@ import {
   type Branding,
 } from "./library";
 import BrandingEditor from "./BrandingEditor";
+import SelectionMenus from "./SelectionMenus";
 import CategoryTabs from "./CategoryTabs";
 import { exportStandalone, readStandalone } from "./config";
 import { DEFAULT_THEME, themeStyle } from "./theme";
@@ -726,12 +723,7 @@ export default function App({
   const operations: [string, string, ReactNode][] = [
     ["smaller", "缩小贴纸", <Minus />],
     ["larger", "放大贴纸", <Plus />],
-    ["rotate", "旋转 15°", <RotateCw />],
-    ["flipX", "水平翻转", <FlipHorizontal2 />],
-    ["flipY", "垂直翻转", <FlipVertical2 />],
     ["duplicate", "复制贴纸", <Copy />],
-    ["front", "上移一层", <ArrowUp />],
-    ["back", "下移一层", <ArrowDown />],
     ["delete", "删除贴纸", <Trash2 />],
   ];
   return (
@@ -892,6 +884,7 @@ export default function App({
           </div>
           {editor.selected && (
             <div className="object-tools has-selection">
+              <SelectionMenus editor={editor} />
               {operations.map(([kind, label, icon]) => (
                 <IconButton
                   key={kind}

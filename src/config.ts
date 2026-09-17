@@ -61,6 +61,15 @@ function canvasImage(value: unknown, sources: Set<string>) {
     (output.scaleY as number) <= 0
   )
     throw new Error("画布图片尺寸无效");
+  if (input.initialScale !== undefined) {
+    if (
+      typeof input.initialScale !== "number" ||
+      !Number.isFinite(input.initialScale) ||
+      input.initialScale <= 0
+    )
+      throw new Error("初始贴纸尺寸无效");
+    output.initialScale = input.initialScale;
+  }
   for (const key of ["flipX", "flipY", "visible"]) {
     if (typeof input[key] !== "boolean") throw new Error("画布图片状态无效");
     output[key] = input[key];

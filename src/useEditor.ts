@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  ActiveSelection,
-  Canvas,
-  FabricImage,
-  type FabricObject,
-} from "fabric";
+import { ActiveSelection, Canvas, FabricImage, FabricObject } from "fabric";
 import type { Sticker, CanvasSnapshot } from "./library";
 import { attachTouchGestures } from "./touchGestures";
 import { getDeviceSize } from "./useDeviceSize";
+FabricObject.customProperties = [
+  ...new Set([...FabricObject.customProperties, "initialScale"]),
+];
+type ResettableObject = FabricObject & { initialScale?: number };
 export function useEditor(
   report: (message: string) => void,
   accent = "#786394",
@@ -24,6 +23,8 @@ export function useEditor(
   const [size, setSize] = useState(dimensions.current);
   const [background, setBackground] = useState("#fffdf7");
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const [opacity, setOpacityState] = useState<number | null>(100);
+  const opacityChanged = useRef(false);
   const [selectedCount, setSelectedCount] = useState(0);
   const [multiSelect, setMultiSelect] = useState(false);
   const multiSelectRef = useRef(false);
@@ -66,6 +67,29 @@ export function useEditor(
     if (resized) c.renderAll();
     else c.requestRenderAll();
     setZoom(scale);
+  }
+  function syncOpacity() {
+    const objects = canvas.current?.getActiveObjects() || [];
+    const values = objects.map((object) => Math.round(object.opacity * 100));
+    setOpacityState(
+      values.every((value) => value === values[0]) ? (values[0] ?? 100) : null,
+    );
+  }
+  function finishOpacity() {
+    if (!opacityChanged.current) return;
+    opacityChanged.current = false;
+    commit();
+  }
+  function setOpacity(value: number) {
+    const c = canvas.current;
+    if (!c || locked.current || !c.getActiveObject()) return;
+    const opacity = Math.max(0, Math.min(100, value)) / 100;
+    for (const object of c.getActiveObjects()) {
+      if (object.opacity !== opacity) opacityChanged.current = true;
+      object.set("opacity", opacity);
+    }
+    syncOpacity();
+    c.requestRenderAll();
   }
   function commit() {
     const c = canvas.current;
@@ -130,7 +154,11 @@ export function useEditor(
       enablePointerEvents: true,
     });
     canvas.current = c;
-    const updateSelection = () => setSelectedCount(c.getActiveObjects().length);
+    const updateSelection = () => {
+      finishOpacity();
+      setSelectedCount(c.getActiveObjects().length);
+      syncOpacity();
+    };
     c.on("selection:created", updateSelection);
     c.on("selection:updated", updateSelection);
     c.on("selection:cleared", updateSelection);
@@ -252,6 +280,7 @@ export function useEditor(
       img.scale(
         (Math.min(width, height) * 0.36) / Math.max(img.width, img.height),
       );
+      (img as ResettableObject).initialScale = img.scaleX;
       const offset =
         ((c.getObjects().length % 5) - 2) * Math.min(width, height) * 0.035;
       img.set({
@@ -360,7 +389,37 @@ export function useEditor(
     }
     if (kind === "flipX") obj.set("flipX", !obj.flipX);
     if (kind === "flipY") obj.set("flipY", !obj.flipY);
-    if (kind === "rotate") obj.rotate((obj.angle + 15) % 360);
+    if (kind === "rotate45" || kind === "rotate90")
+      obj.rotate((obj.angle + (kind === "rotate45" ? 45 : 90)) % 360);
+    if (kind === "reset") {
+      const center = obj.getCenterPoint();
+      // A multi-selection resets its collective transform, preserving member layout.
+      const scale =
+        obj instanceof ActiveSelection
+          ? 1
+          : ((obj as ResettableObject).initialScale ??
+            (Math.min(dimensions.current.width, dimensions.current.height) *
+              0.36) /
+              Math.max(obj.width, obj.height));
+      obj.set({
+        scaleX: scale,
+        scaleY: scale,
+        angle: 0,
+        flipX: false,
+        flipY: false,
+        skewX: 0,
+        skewY: 0,
+      });
+      obj.setPositionByOrigin(center, "center", "center");
+    }
+    if (kind === "top" || kind === "bottom") {
+      c.discardActiveObject();
+      for (const object of kind === "top" ? objects : [...objects].reverse()) {
+        if (kind === "top") c.bringObjectToFront(object);
+        else c.sendObjectToBack(object);
+      }
+      selectObjects(objects);
+    }
     if (kind === "larger" || kind === "smaller")
       obj.set({
         scaleX: Math.max(
@@ -496,6 +555,9 @@ export function useEditor(
     backgroundImage,
     imageBackground,
     color,
+    opacity,
+    setOpacity,
+    finishOpacity,
     selected: selectedCount > 0,
     selectedCount,
     multiSelect,
