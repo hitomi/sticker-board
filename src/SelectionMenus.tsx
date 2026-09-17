@@ -99,7 +99,7 @@ export default function SelectionMenus({ editor }: Props) {
                 value={editor.opacity ?? 100}
                 disabled={editor.busy}
                 onChange={(event) =>
-                  editor.setOpacity(Number(event.target.value))
+                  editor.setOpacity(Number(event.currentTarget.value))
                 }
                 onPointerUp={editor.finishOpacity}
                 onPointerCancel={editor.finishOpacity}

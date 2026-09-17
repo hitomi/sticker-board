@@ -1,6 +1,6 @@
 # 贴贴 · Sticker Studio
 
-React + TypeScript + Vite + Tailwind CSS + Fabric.js 的纯前端贴纸工作台。
+Preact + TypeScript + Vite + Tailwind CSS + Fabric.js 的纯前端贴纸工作台。通过 `preact/compat` 兼容 React 组件写法及 Radix UI，开发和生产构建均使用 Preact。
 
 ## 本地运行
 

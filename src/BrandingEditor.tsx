@@ -38,7 +38,7 @@ export default function BrandingEditor({
           value={value.title}
           maxLength={40}
           disabled={busy}
-          onChange={(e) => onChange({ ...value, title: e.target.value })}
+          onChange={(e) => onChange({ ...value, title: e.currentTarget.value })}
           placeholder="给贴纸小站起个名字"
         />
       </label>
@@ -107,7 +107,7 @@ export default function BrandingEditor({
               aria-label="自定义主题色"
               value={value.themeColor || DEFAULT_THEME}
               onChange={(event) =>
-                onChange({ ...value, themeColor: event.target.value })
+                onChange({ ...value, themeColor: event.currentTarget.value })
               }
             />
           </label>
@@ -173,8 +173,8 @@ export default function BrandingEditor({
         accept=".png,.jpg,.jpeg,.webp,.svg,.ico"
         aria-label="导入 Logo 图片"
         onChange={(e) => {
-          void select(e.target.files?.[0]);
-          e.target.value = "";
+          void select(e.currentTarget.files?.[0]);
+          e.currentTarget.value = "";
         }}
       />
     </div>

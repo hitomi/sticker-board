@@ -516,11 +516,11 @@ export default function App({
               : selectedPreset
         }
         onChange={(e) => {
-          if (e.target.value === "custom") openCustom();
-          else if (e.target.value === "device")
+          if (e.currentTarget.value === "custom") openCustom();
+          else if (e.currentTarget.value === "device")
             editor.resize(deviceSize.width, deviceSize.height);
           else {
-            const p = presets[Number(e.target.value)];
+            const p = presets[Number(e.currentTarget.value)];
             editor.resize(p.width, p.height);
           }
         }}
@@ -566,7 +566,7 @@ export default function App({
             {!editor.backgroundImage && editor.background === color && (
               <Check
                 size={14}
-                color={color === "#33383c" ? "#fff" : "#554c65"}
+                style={{ color: color === "#33383c" ? "#fff" : "#554c65" }}
               />
             )}
           </button>
@@ -582,7 +582,7 @@ export default function App({
                 ? "#ffffff"
                 : editor.background
             }
-            onChange={(e) => editor.color(e.target.value)}
+            onChange={(e) => editor.color(e.currentTarget.value)}
           />
         </label>
       </div>
@@ -665,7 +665,7 @@ export default function App({
           aria-label="搜索贴纸"
           placeholder="找一张贴纸…"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => setQuery(e.currentTarget.value)}
         />
         {query && (
           <button aria-label="清除搜索" onClick={() => setQuery("")}>
@@ -1142,7 +1142,7 @@ export default function App({
                 min="64"
                 max="4096"
                 value={width}
-                onChange={(e) => setWidth(e.target.value)}
+                onChange={(e) => setWidth(e.currentTarget.value)}
                 required
               />
             </label>
@@ -1154,7 +1154,7 @@ export default function App({
                 min="64"
                 max="4096"
                 value={height}
-                onChange={(e) => setHeight(e.target.value)}
+                onChange={(e) => setHeight(e.currentTarget.value)}
                 required
               />
             </label>
@@ -1276,8 +1276,8 @@ export default function App({
             ref={restoreRef}
             aria-label="恢复独立版配置文件"
             onChange={(event) => {
-              void readConfig(event.target.files?.[0]);
-              event.target.value = "";
+              void readConfig(event.currentTarget.files?.[0]);
+              event.currentTarget.value = "";
             }}
           />
         </>
@@ -1290,8 +1290,8 @@ export default function App({
           ref={uploadRef}
           aria-label="导入贴纸 ZIP"
           onChange={(event) => {
-            void upload(event.target.files?.[0]);
-            event.target.value = "";
+            void upload(event.currentTarget.files?.[0]);
+            event.currentTarget.value = "";
           }}
         />
       )}
@@ -1318,7 +1318,7 @@ export default function App({
               onChange={(event) =>
                 setBranding({
                   ...branding,
-                  allowStickerUploads: event.target.checked,
+                  allowStickerUploads: event.currentTarget.checked,
                 })
               }
             />
@@ -1337,7 +1337,7 @@ export default function App({
               onChange={(event) =>
                 setBranding({
                   ...branding,
-                  allowBackgroundUploads: event.target.checked,
+                  allowBackgroundUploads: event.currentTarget.checked,
                 })
               }
             />
@@ -1356,7 +1356,7 @@ export default function App({
               onChange={(event) =>
                 setBranding({
                   ...branding,
-                  allowZipUploads: event.target.checked,
+                  allowZipUploads: event.currentTarget.checked,
                 })
               }
             />
@@ -1393,8 +1393,8 @@ export default function App({
           ref={imageUploadRef}
           aria-label="导入贴纸图片"
           onChange={(event) => {
-            void uploadImages(Array.from(event.target.files || []));
-            event.target.value = "";
+            void uploadImages(Array.from(event.currentTarget.files || []));
+            event.currentTarget.value = "";
           }}
         />
       )}
@@ -1406,8 +1406,8 @@ export default function App({
           ref={backgroundUploadRef}
           aria-label="导入背景图片文件"
           onChange={(event) => {
-            void uploadBackground(event.target.files?.[0]);
-            event.target.value = "";
+            void uploadBackground(event.currentTarget.files?.[0]);
+            event.currentTarget.value = "";
           }}
         />
       )}
