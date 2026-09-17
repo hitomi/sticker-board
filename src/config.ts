@@ -149,6 +149,16 @@ async function validateConfig(value: unknown): Promise<Pack> {
     const link = record(value);
     return { title: text(link.title, 80), url: text(link.url, 2048) };
   });
+  if (brand.categoryOrder !== undefined && !Array.isArray(brand.categoryOrder))
+    throw new Error("分类排序设置无效");
+  const categoryOrder =
+    brand.categoryOrder === undefined
+      ? undefined
+      : [
+          ...new Set(
+            (brand.categoryOrder as unknown[]).map((value) => text(value, 4000)),
+          ),
+        ];
   if (logo) sources.add(logo);
   let canvas: CanvasSnapshot | undefined;
   if (input.canvas !== undefined) {
@@ -213,6 +223,7 @@ async function validateConfig(value: unknown): Promise<Pack> {
       announcementEnabled: brand.announcementEnabled === true,
       announcement,
       links,
+      categoryOrder,
     }),
     canvas,
   };

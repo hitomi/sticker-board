@@ -36,7 +36,7 @@ import {
   type Sticker,
   type Branding,
 } from "./library";
-import BrandingEditor from "./BrandingEditor";
+import SettingsEditor from "./SettingsEditor";
 import Announcement from "./Announcement";
 import { finishStartup } from "./startup";
 import { isPendingAsset, resolveAssets } from "./assetStream";
@@ -281,17 +281,27 @@ export default function App({
     editor.busy;
   const imageUploadRef = useRef<HTMLInputElement>(null);
   const backgroundUploadRef = useRef<HTMLInputElement>(null);
-  const categories = [
-    { id: "all", name: "全部" },
-    ...(allowStickerUploads ? [{ id: "uploads", name: "自定义" }] : []),
+  const categoryRanks = new Map(
+    (branding.categoryOrder || []).map((name, index) => [name, index]),
+  );
+  const sortableCategories = [
+    ...(allowStickerUploads
+      ? [{ id: "uploads", name: "自定义", sortKey: "我的上传" }]
+      : []),
     ...[...new Set(pack.stickers.map((s) => s.category))]
       .filter((name) => !allowStickerUploads || name !== "我的上传")
       .map((name) => ({
         id: `category:${name}`,
         // Keep stored category names compatible with existing workspaces and exports.
         name: name === "我的上传" ? "自定义" : name,
+        sortKey: name,
       })),
-  ];
+  ].sort(
+    (a, b) =>
+      (categoryRanks.get(a.sortKey) ?? categoryRanks.size) -
+      (categoryRanks.get(b.sortKey) ?? categoryRanks.size),
+  );
+  const categories = [{ id: "all", name: "全部" }, ...sortableCategories];
   const allStickers = [...pack.stickers, ...uploads];
   const shown = (
     tab === "uploads"
@@ -1217,12 +1227,13 @@ export default function App({
             title="设置"
             description="设置实时应用于当前页面。"
           >
-            <BrandingEditor
+            <SettingsEditor
               value={branding}
               onChange={setBranding}
               busy={configBusy}
               onBusy={setExporting}
               onError={setConfigError}
+              categories={sortableCategories}
             />
             <div className="config-summary">
               {allStickers.length} 张贴纸 · {editor.size.width} ×{" "}

@@ -1133,6 +1133,62 @@ button svg {
   border: 0;
   font-size: 12px;
 }
+.category-order {
+  border: 0;
+  padding: 0;
+  margin: 24px 0;
+  min-width: 0;
+  font-size: 12px;
+}
+.settings-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f5f2f7;
+  border-radius: 10px;
+}
+.settings-tabs button {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 7px;
+  color: #827b89;
+  font-size: 13px;
+}
+.settings-tabs button[aria-selected="true"] {
+  background: #fff;
+  color: var(--accent-text);
+  box-shadow: 0 1px 4px #29223110;
+}
+.category-order > p {
+  margin: 6px 0 10px;
+  color: #827b89;
+}
+.category-order ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.category-order li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  border-bottom: 1px solid #eae5ee;
+}
+.category-order li > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.category-order .icon-button {
+  width: 40px;
+  height: 40px;
+}
 .navigation-editor legend {
   margin-bottom: 12px;
 }

@@ -18,6 +18,8 @@ export type Branding = {
   announcementEnabled?: boolean;
   announcement?: string;
   links?: { title: string; url: string }[];
+  /** Raw category names, so the personal category keeps its order across export permissions. */
+  categoryOrder?: string[];
 };
 export const announcementMaxLength = 20_000;
 export function navigationHref(value: string): string | undefined {
