@@ -1,4 +1,4 @@
-import { Canvas, Point, util, type FabricObject, type Transform } from "fabric";
+import { Canvas, Point, util, type FabricObject, type Transform } from "fabric/es";
 
 type Options = {
   blocked: () => boolean;

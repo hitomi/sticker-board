@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { ActiveSelection, Canvas, FabricImage, FabricObject } from "fabric";
+// Keep serialized object classes directly referenced: fabric/es only registers
+// retained classes. Stickers and backgrounds are both FabricImage, including SVGs.
+import { ActiveSelection, Canvas, FabricImage, FabricObject } from "fabric/es";
 import type { Sticker, CanvasSnapshot } from "./library";
 import { attachTouchGestures } from "./touchGestures";
 import { finishStartup } from "./startup";
