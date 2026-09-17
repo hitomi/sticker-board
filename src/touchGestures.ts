@@ -37,10 +37,17 @@ export function attachTouchGestures(
   let paired = false;
   let waitingForRelease = false;
   const client = (e: PointerEvent) => new Point(e.clientX, e.clientY);
-  const scene = (point: Point) =>
-    canvas.getScenePoint(
-      new PointerEvent("pointermove", { clientX: point.x, clientY: point.y }),
+  // Client coordinates and DOM bounds share the same origin, even when the
+  // expanded workspace scrolls. Remove CSS scaling before the Fabric transform.
+  const viewport = (point: Point) => {
+    const rect = canvas.upperCanvasEl.getBoundingClientRect();
+    return new Point(
+      ((point.x - rect.left) * canvas.width) / rect.width,
+      ((point.y - rect.top) * canvas.height) / rect.height,
     );
+  };
+  const scene = (point: Point) =>
+    viewport(point).transform(util.invertTransform(canvas.viewportTransform));
   const applyView = (next: typeof view) => {
     const xLimit = Math.max(
       0,
@@ -100,11 +107,11 @@ export function attachTouchGestures(
       const selected = canvas.getActiveObject();
       const onCanvas = event.target === canvas.upperCanvasEl;
       const control = onCanvas
-        ? selected?.findControl(canvas.getViewportPoint(event), true)
+        ? selected?.findControl(viewport(client(event)), true)
         : undefined;
       touchingControl = !!control;
 
-      const point = canvas.getScenePoint(event);
+      const point = scene(client(event));
       tapTarget = onCanvas
         ? canvas.searchPossibleTargets(canvas.getObjects(), point).target
         : undefined;
