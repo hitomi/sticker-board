@@ -12,7 +12,12 @@ export default defineConfig(({ mode }) => ({
   define: { __STANDALONE__: JSON.stringify(mode === "standalone") },
   build: {
     outDir: mode === "standalone" ? ".generated" : "dist",
-    ...(mode === "standalone" ? { copyPublicDir: false } : {}),
+    ...(mode === "standalone"
+      ? {
+          copyPublicDir: false,
+          rolldownOptions: { output: { format: "iife" } },
+        }
+      : {}),
   },
   server: { host: "0.0.0.0" },
 }));

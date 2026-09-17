@@ -1,3 +1,4 @@
+import { assetPrefix, resolveAssets } from "./assetStream";
 import JSZip from "jszip";
 import deploymentGuide from "../docs/github-pages.txt?raw";
 import {
@@ -213,7 +214,7 @@ export async function readStandalone(file: File): Promise<Pack> {
   } else if (/\.html?$/i.test(file.name)) html = await file.text();
   else throw new Error("请选择导出的 ZIP 或 index.html");
   if (html.length > maxFileSize) throw new Error("独立版内容超过 400 MB");
-  // Read only the inert JSON block; never execute the imported page or its scripts.
+  // Parse the manifest and literal asset arguments only; never execute imported scripts.
   const match =
     /<script\b(?=[^>]*\bid\s*=\s*["']sticker-pack["'])[^>]*>([\s\S]*?)<\/script>/i.exec(
       html,
@@ -225,7 +226,16 @@ export async function readStandalone(file: File): Promise<Pack> {
   } catch {
     throw new Error("配置数据损坏，无法恢复");
   }
-  return validateConfig(data);
+  const assets: Record<string, string> = Object.create(null);
+  for (const match of html.matchAll(
+    /<script data-sticker-asset="(a\d+)">window\.__stickerAsset\(([^<]*?)\);<\/script>/g,
+  )) {
+    const [id, src] = JSON.parse(`[${match[2]}]`);
+    if (id !== match[1] || typeof src !== "string" || assets[id])
+      throw new Error("独立版图片资源无效");
+    assets[id] = src;
+  }
+  return validateConfig(resolveAssets(data, assets, true));
 }
 export async function exportStandalone(pack: Pack) {
   const response = await fetch(`${import.meta.env.BASE_URL}standalone.html`);
@@ -233,13 +243,49 @@ export async function exportStandalone(pack: Pack) {
   const template = await response.text();
   const marker =
     /<script id="sticker-pack" type="application\/json">\s*null\s*<\/script>/;
-  if (!marker.test(template))
+  if (
+    !marker.test(template) ||
+    !template.includes('id="boot-screen"') ||
+    !template.includes("window.__stickerAsset")
+  )
     throw new Error("独立版模板不完整，请重新构建应用");
+  const assets = new Map<string, string>();
+  const manifest = JSON.parse(
+    JSON.stringify(
+      {
+        canvas: pack.canvas,
+        branding: pack.branding,
+        ...pack,
+        schemaVersion: 1,
+        buildId: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
+      },
+      (key, value) => {
+        if (
+          (key === "src" || key === "logo") &&
+          typeof value === "string" &&
+          /^data:image\//i.test(value)
+        ) {
+          if (!assets.has(value)) assets.set(value, `a${assets.size}`);
+          return `${assetPrefix}${assets.get(value)}`;
+        }
+        return value;
+      },
+    ),
+  );
+  manifest.assetCount = assets.size;
+  const safeJson = (value: unknown) =>
+    JSON.stringify(value).replace(/</g, "\\u003c");
+  const assetScripts = [...assets]
+    .map(
+      ([src, id]) =>
+        `<script data-sticker-asset="${id}">window.__stickerAsset(${safeJson(id)},${safeJson(src)});</script>`,
+    )
+    .join("\n");
   const html = template
     .replace(
       marker,
       () =>
-        `<script id="sticker-pack" type="application/json">${JSON.stringify({ ...pack, schemaVersion: 1, buildId: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}` }).replace(/</g, "\\u003c")}</script>`,
+        `<script id="sticker-pack" type="application/json">${safeJson(manifest)}</script>`,
     )
     .replace(
       /<title>[\s\S]*?<\/title>/,
@@ -247,7 +293,14 @@ export async function exportStandalone(pack: Pack) {
         `<title>${(pack.branding?.title || "贴贴").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</title>`,
     );
   const zip = new JSZip();
-  zip.file("index.html", html);
+  zip.file(
+    "index.html",
+    html.replace(
+      "</body>",
+      () =>
+        `${assetScripts}\n<script>window.__stickerAssetsDone();</script>\n</body>`,
+    ),
+  );
   zip.file("使用说明.txt", deploymentGuide);
   const filename = (pack.branding?.title || pack.name || "贴贴").replace(
     /[\\/:*?"<>|]/g,

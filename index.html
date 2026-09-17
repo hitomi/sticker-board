@@ -7,10 +7,139 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="theme-color" content="#f7f8fa" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='17' fill='%23ece6f6'/%3E%3Cpath d='M18 16h29v23L36 49H18Z' fill='none' stroke='%23786394' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M36 49V38h11M25 27h2m10 0h2m-14 8q7 5 14 0' fill='none' stroke='%23786394' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='17' fill='%23ece6f6'/%3E%3Cpath d='M18 16h29v23L36 49H18Z' fill='none' stroke='%23786394' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M36 49V38h11M25 27h2m10 0h2m-14 8q7 5 14 0' fill='none' stroke='%23786394' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
     <title>贴贴 · Sticker Studio</title>
+    <style id="boot-style">
+      #boot-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 24px;
+        box-sizing: border-box;
+        background: #f6f7f9;
+        color: #57535f;
+        font:
+          14px/1.6 system-ui,
+          sans-serif;
+        text-align: center;
+      }
+      #boot-screen p {
+        margin: 0;
+      }
+      #boot-screen small {
+        max-width: 300px;
+        color: #827b89;
+        font-size: 12px;
+      }
+      #boot-spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid #e5deed;
+        border-top-color: #786394;
+        border-radius: 50%;
+        animation: boot-spin 1s linear infinite;
+      }
+      #boot-screen button {
+        padding: 8px 18px;
+        border: 1px solid #d0c8da;
+        border-radius: 8px;
+        background: white;
+        color: #57535f;
+        font: inherit;
+        cursor: pointer;
+      }
+      @keyframes boot-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot-spinner {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="boot-screen" role="status" aria-live="polite" aria-busy="true">
+      <div id="boot-spinner" aria-hidden="true"></div>
+      <p id="boot-message">正在加载素材…</p>
+      <small id="boot-hint">首次打开可能需要一些时间，请勿重复刷新</small>
+      <button id="boot-retry" type="button" hidden onclick="location.reload()">
+        重新打开
+      </button>
+      <noscript>请启用浏览器 JavaScript 后重新打开。</noscript>
+    </div>
+    <script id="boot-script">
+      (() => {
+        window.__stickerStream = {
+          assets: Object.create(null),
+          received: 0,
+          total: 0,
+          done: false,
+          error: false,
+        };
+        window.__stickerAsset = (id, src) => {
+          const stream = window.__stickerStream;
+          if (!(id in stream.assets)) stream.received++;
+          stream.assets[id] = src;
+          window.dispatchEvent(new Event("sticker-assets"));
+          document.currentScript?.remove();
+        };
+        window.__stickerAssetsDone = () => {
+          window.__stickerStream.done = true;
+          window.dispatchEvent(new Event("sticker-assets"));
+        };
+        window.addEventListener(
+          "load",
+          () => {
+            const stream = window.__stickerStream;
+            if (stream.received < stream.total) {
+              stream.error = true;
+              window.dispatchEvent(new Event("sticker-assets"));
+            }
+          },
+          { once: true },
+        );
+        const screen = document.getElementById("boot-screen");
+        const slow = setTimeout(() => {
+          if (screen.isConnected)
+            document.getElementById("boot-hint").textContent =
+              "素材较多或网络较慢，请保持页面打开，无需重复刷新";
+        }, 12000);
+        const failure = () => {
+          if (!screen.isConnected) return;
+          clearTimeout(slow);
+          document.getElementById("boot-message").textContent =
+            "页面未能完成加载";
+          document.getElementById("boot-hint").textContent =
+            "请检查网络连接后重新打开，本地作品不会被清空";
+          document.getElementById("boot-spinner").hidden = true;
+          document.getElementById("boot-retry").hidden = false;
+          screen.setAttribute("aria-busy", "false");
+        };
+        window.addEventListener("error", failure);
+        window.addEventListener("unhandledrejection", failure);
+        window.addEventListener(
+          "sticker-ready",
+          () => {
+            clearTimeout(slow);
+            window.removeEventListener("error", failure);
+            window.removeEventListener("unhandledrejection", failure);
+            screen.remove();
+          },
+          { once: true },
+        );
+      })();
+    </script>
     <script id="sticker-pack" type="application/json">
       null
     </script>

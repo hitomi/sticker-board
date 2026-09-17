@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ActiveSelection, Canvas, FabricImage, FabricObject } from "fabric";
 import type { Sticker, CanvasSnapshot } from "./library";
 import { attachTouchGestures } from "./touchGestures";
+import { finishStartup } from "./startup";
 import { getDeviceSize } from "./useDeviceSize";
 FabricObject.customProperties = [
   ...new Set([...FabricObject.customProperties, "initialScale"]),
@@ -211,7 +212,10 @@ export function useEditor(
     observer.observe(stage.current!);
     fit();
     if (initialSnapshot)
-      void restore(initialSnapshot).catch(() => report("初始画布加载失败"));
+      void restore(initialSnapshot).catch(() => {
+        finishStartup();
+        report("初始画布加载失败，请重新打开页面");
+      });
     else commit();
     return () => {
       c.upperCanvasEl.removeEventListener("pointerdown", toggleByPointer, {

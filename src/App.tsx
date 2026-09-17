@@ -35,6 +35,8 @@ import {
   type Branding,
 } from "./library";
 import BrandingEditor from "./BrandingEditor";
+import { finishStartup } from "./startup";
+import { isPendingAsset, resolveAssets } from "./assetStream";
 import SelectionMenus from "./SelectionMenus";
 import CategoryTabs from "./CategoryTabs";
 import { exportStandalone, readStandalone } from "./config";
@@ -163,6 +165,32 @@ export default function App({
     noticeTimer.current = setTimeout(() => setNotice(""), 6000);
   }
   const [pack, setPack] = useState<Pack>(initialPack);
+  const [streamFailed, setStreamFailed] = useState(false);
+  const pendingAssets = pack.stickers.filter((sticker) =>
+    isPendingAsset(sticker.src),
+  ).length;
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const hydrate = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const stream = window.__stickerStream;
+        if (!stream) return;
+        setPack((current) =>
+          current.stickers.some((sticker) => isPendingAsset(sticker.src))
+            ? resolveAssets(current, stream.assets)
+            : current,
+        );
+        setStreamFailed(stream.error);
+      });
+    };
+    window.addEventListener("sticker-assets", hydrate);
+    hydrate();
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("sticker-assets", hydrate);
+    };
+  }, []);
   const [tab, setTab] = useState("all");
   const [deletingStickers, setDeletingStickers] = useState(false);
   const [uploads, setUploads] = useState<Sticker[]>(
@@ -194,6 +222,9 @@ export default function App({
     themeStyle(siteBranding?.themeColor)["--accent-text"],
     initialPack.canvas,
   );
+  useEffect(() => {
+    if (editor.ready) finishStartup();
+  }, [editor.ready]);
   const deviceSize = useDeviceSize();
   const expandedWorkspace = useExpandedWorkspace();
   const autosave = useAutoSave(storageKey, persistent);
@@ -348,7 +379,7 @@ export default function App({
     }
   }
   async function exportCurrent() {
-    if (configBusy) return;
+    if (configBusy || pendingAssets > 0) return;
     setExporting(true);
     setConfigError("");
     try {
@@ -642,6 +673,13 @@ export default function App({
           </button>
         )}
       </div>
+      {pendingAssets > 0 && (
+        <p className="asset-stream-status" role="status">
+          {streamFailed
+            ? "素材未完整载入，请检查网络后重新打开"
+            : `正在加载贴纸 ${pack.stickers.length - pendingAssets}/${pack.stickers.length}，请勿刷新`}
+        </p>
+      )}
       <CategoryTabs categories={categories} value={tab} onChange={setTab} />
       {tab === "uploads" && allowStickerUploads && (
         <>
@@ -670,10 +708,18 @@ export default function App({
               <button
                 className="sticker-card"
                 aria-label={`添加${s.name}`}
-                disabled={editor.busy || deletingStickers}
+                disabled={
+                  editor.busy || deletingStickers || isPendingAsset(s.src)
+                }
                 onClick={() => void add(s)}
               >
-                <img src={s.src} alt="" loading="lazy" />
+                {isPendingAsset(s.src) ? (
+                  <span className="sticker-placeholder" aria-label="尚未加载">
+                    <LoaderCircle className="spin" size={20} />
+                  </span>
+                ) : (
+                  <img src={s.src} alt="" loading="lazy" />
+                )}
                 <span>{s.name}</span>
                 {!deletingStickers && (
                   <span className="add-indicator">
