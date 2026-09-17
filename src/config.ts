@@ -3,6 +3,7 @@ import JSZip from "jszip";
 import deploymentGuide from "../docs/github-pages.txt?raw";
 import {
   normalizeBranding,
+  announcementMaxLength,
   saveBlob,
   type Pack,
   type CanvasSnapshot,
@@ -133,6 +134,21 @@ async function validateConfig(value: unknown): Promise<Pack> {
   )
     throw new Error("ZIP 导入设置无效");
   const logo = brand.logo === undefined ? undefined : imageSource(brand.logo);
+  if (
+    brand.announcementEnabled !== undefined &&
+    typeof brand.announcementEnabled !== "boolean"
+  )
+    throw new Error("公告设置无效");
+  const announcement =
+    brand.announcement === undefined
+      ? ""
+      : text(brand.announcement, announcementMaxLength);
+  if (brand.links !== undefined && !Array.isArray(brand.links))
+    throw new Error("导航链接设置无效");
+  const links = (brand.links as unknown[] | undefined)?.map((value) => {
+    const link = record(value);
+    return { title: text(link.title, 80), url: text(link.url, 2048) };
+  });
   if (logo) sources.add(logo);
   let canvas: CanvasSnapshot | undefined;
   if (input.canvas !== undefined) {
@@ -194,6 +210,9 @@ async function validateConfig(value: unknown): Promise<Pack> {
         | boolean
         | undefined,
       allowZipUploads: brand.allowZipUploads === true,
+      announcementEnabled: brand.announcementEnabled === true,
+      announcement,
+      links,
     }),
     canvas,
   };
@@ -296,9 +315,9 @@ export async function exportStandalone(pack: Pack) {
   zip.file(
     "index.html",
     html.replace(
-      "</body>",
-      () =>
-        `${assetScripts}\n<script>window.__stickerAssetsDone();</script>\n</body>`,
+      /<\/body>(\s*<\/html>\s*)$/i,
+      (_, ending: string) =>
+        `${assetScripts}\n<script>window.__stickerAssetsDone();</script>\n</body>${ending}`,
     ),
   );
   zip.file("使用说明.txt", deploymentGuide);

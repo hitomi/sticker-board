@@ -15,7 +15,19 @@ export type Branding = {
   allowStickerUploads?: boolean;
   allowBackgroundUploads?: boolean;
   allowZipUploads?: boolean;
+  announcementEnabled?: boolean;
+  announcement?: string;
+  links?: { title: string; url: string }[];
 };
+export const announcementMaxLength = 20_000;
+export function navigationHref(value: string): string | undefined {
+  try {
+    const url = new URL(value.trim());
+    if (url.protocol === "https:" || url.protocol === "http:") return url.href;
+  } catch {
+    // Incomplete drafts stay editable, but never become navigation targets.
+  }
+}
 export function normalizeBranding(branding: Branding): Branding {
   const { allowUploads, ...current } = branding;
   return {

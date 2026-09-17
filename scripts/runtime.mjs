@@ -5,19 +5,18 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 const generated = readFileSync(".generated/index.html", "utf8");
 const resources = [];
 const template = generated
-  .replace(/<head>([\s\S]*?)<\/head>/i, (_, head) => {
-    const lightHead = head.replace(
-      /<script\b[^>]*type="module"[^>]*>[\s\S]*?<\/script>|<style\b[^>]*>[\s\S]*?<\/style>/gi,
-      (tag) => {
-        if (tag.startsWith('<style id="boot-style"')) return tag;
-        resources.push(
-          tag.replace(/<script\b[^>]*type="module"[^>]*>/i, "<script>"),
-        );
-        return "";
-      },
-    );
-    return `<head>${lightHead}</head>`;
-  })
+  // Consume entire script/style elements first: bundled libraries can contain
+  // literal HTML such as </head>, which must not truncate the document head.
+  .replace(
+    /<script\b[^>]*type="module"[^>]*>[\s\S]*?<\/script>|<style\b[^>]*>[\s\S]*?<\/style>/gi,
+    (tag) => {
+      if (tag.startsWith('<style id="boot-style"')) return tag;
+      resources.push(
+        tag.replace(/<script\b[^>]*type="module"[^>]*>/i, "<script>"),
+      );
+      return "";
+    },
+  )
   .replace(
     "</body>",
     () =>

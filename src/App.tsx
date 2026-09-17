@@ -28,6 +28,8 @@ import {
 import {
   readZip,
   normalizeBranding,
+  navigationHref,
+  announcementMaxLength,
   saveBlob,
   readLocalImage,
   type Pack,
@@ -35,6 +37,7 @@ import {
   type Branding,
 } from "./library";
 import BrandingEditor from "./BrandingEditor";
+import Announcement from "./Announcement";
 import { finishStartup } from "./startup";
 import { isPendingAsset, resolveAssets } from "./assetStream";
 import SelectionMenus from "./SelectionMenus";
@@ -103,20 +106,24 @@ function Modal({
   description,
   children,
   drawer = false,
+  layer = 20,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  description: string;
+  description?: string;
   children: ReactNode;
   drawer?: boolean;
+  layer?: number;
 }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="overlay" />
+        <Dialog.Overlay className="overlay" style={{ zIndex: layer }} />
         <Dialog.Content
           className={`dialog ${drawer ? "drawer" : ""}`}
+          style={{ zIndex: layer + 1 }}
+          {...(!description ? { "aria-describedby": undefined } : {})}
           onPointerDownOutside={(e) => e.preventDefault()}
         >
           <div className="dialog-heading">
@@ -127,9 +134,11 @@ function Modal({
               </button>
             </Dialog.Close>
           </div>
-          <Dialog.Description className="dialog-description">
-            {description}
-          </Dialog.Description>
+          {description && (
+            <Dialog.Description className="dialog-description">
+              {description}
+            </Dialog.Description>
+          )}
           {children}
         </Dialog.Content>
       </Dialog.Portal>
@@ -212,6 +221,18 @@ export default function App({
     normalizeBranding(pack.branding || defaultBranding),
   );
   const siteBranding = branding;
+  const navigationLinks = (siteBranding.links || []).flatMap((link) => {
+    const href = navigationHref(link.url);
+    return href && link.title.trim()
+      ? [{ title: link.title.trim(), href }]
+      : [];
+  });
+  const [announcementOpen, setAnnouncementOpen] = useState(
+    () =>
+      __STANDALONE__ &&
+      !!initialPack.branding?.announcementEnabled &&
+      !!initialPack.branding.announcement?.trim(),
+  );
   const allowStickerUploads =
     !__STANDALONE__ || !!siteBranding.allowStickerUploads;
   const allowBackgroundUploads =
@@ -787,33 +808,52 @@ export default function App({
         editor.deselect();
       }}
     >
-      <header className="header">
-        <a
-          className="brand"
-          href="./"
-          aria-label={siteBranding?.title || "贴贴首页"}
-          onClick={(e) => e.preventDefault()}
-        >
-          {siteBranding?.logo ? (
-            <img
-              className="custom-logo"
-              src={siteBranding.logo}
-              alt="站点 Logo"
-            />
-          ) : (
-            <span className="brand-icon">
-              <StickerIcon size={23} />
-            </span>
-          )}
-          <span className="brand-text">
-            <span className="site-title" title={siteBranding?.title}>
-              {siteBranding?.title || "贴贴"}
-            </span>
-            {branding.title === "贴贴" && !branding.logo && (
-              <span className="brand-en">sticker studio</span>
+      <header
+        className={`header ${navigationLinks.length ? "has-navigation" : ""}`}
+      >
+        <div className="header-identity">
+          <a
+            className="brand"
+            href="./"
+            aria-label={siteBranding?.title || "贴贴首页"}
+            onClick={(e) => e.preventDefault()}
+          >
+            {siteBranding?.logo ? (
+              <img
+                className="custom-logo"
+                src={siteBranding.logo}
+                alt="站点 Logo"
+              />
+            ) : (
+              <span className="brand-icon">
+                <StickerIcon size={23} />
+              </span>
             )}
-          </span>
-        </a>
+            <span className="brand-text">
+              <span className="site-title" title={siteBranding?.title}>
+                {siteBranding?.title || "贴贴"}
+              </span>
+              {branding.title === "贴贴" && !branding.logo && (
+                <span className="brand-en">sticker studio</span>
+              )}
+            </span>
+          </a>
+          {navigationLinks.length > 0 && (
+            <nav className="site-navigation" aria-label="站点导航">
+              {navigationLinks.map((link, index) => (
+                <a
+                  key={index}
+                  href={link.href}
+                  title={link.title}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {link.title}
+                </a>
+              ))}
+            </nav>
+          )}
+        </div>
         <div className="header-actions">
           {!__STANDALONE__ && (
             <>
@@ -844,6 +884,8 @@ export default function App({
           )}
           <button
             className="primary"
+            aria-label={renderingImage ? "正在生成…" : "下载图片"}
+            title="下载图片"
             onClick={() => void downloadImage()}
             disabled={configBusy}
           >
@@ -1361,6 +1403,51 @@ export default function App({
               }
             />
           </label>
+          <label className="upload-permission">
+            <span>
+              <strong>显示公告</strong>
+              <small>每次打开独立版时显示</small>
+            </span>
+            <input
+              type="checkbox"
+              role="switch"
+              aria-label="显示公告"
+              checked={!!branding.announcementEnabled}
+              disabled={configBusy}
+              onChange={(event) =>
+                setBranding({
+                  ...branding,
+                  announcementEnabled: event.currentTarget.checked,
+                })
+              }
+            />
+          </label>
+          {branding.announcementEnabled && (
+            <div className="announcement-editor">
+              <label htmlFor="announcement">公告内容</label>
+              <textarea
+                id="announcement"
+                rows={5}
+                maxLength={announcementMaxLength}
+                value={branding.announcement || ""}
+                disabled={configBusy}
+                placeholder="支持 Markdown，留空则不显示"
+                onChange={(event) =>
+                  setBranding({
+                    ...branding,
+                    announcement: event.currentTarget.value,
+                  })
+                }
+              />
+              <button
+                className="small-button"
+                disabled={!branding.announcement?.trim() || configBusy}
+                onClick={() => setAnnouncementOpen(true)}
+              >
+                预览公告
+              </button>
+            </div>
+          )}
           <p className="config-summary">
             {allStickers.length} 张贴纸 · {editor.size.width} ×{" "}
             {editor.size.height} px
@@ -1384,6 +1471,20 @@ export default function App({
           </button>
         </Modal>
       )}
+      <Modal
+        open={announcementOpen && editor.ready}
+        onOpenChange={setAnnouncementOpen}
+        title="公告"
+        layer={22}
+      >
+        <Announcement content={branding.announcement || ""} />
+        <button
+          className="primary wide"
+          onClick={() => setAnnouncementOpen(false)}
+        >
+          我知道了
+        </button>
+      </Modal>
       {allowStickerUploads && (
         <input
           hidden
