@@ -7,6 +7,7 @@ export function useExpandedWorkspace() {
   const standalone = (navigator as Navigator & { standalone?: boolean })
     .standalone;
   const supported =
+    !__MINITOOL__ &&
     !standalone &&
     !matchMedia("(display-mode: standalone)").matches &&
     (/iPhone|iPad|iPod/.test(navigator.userAgent) ||

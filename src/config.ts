@@ -124,6 +124,7 @@ async function validateConfig(value: unknown): Promise<Pack> {
     "allowUploads",
     "allowStickerUploads",
     "allowBackgroundUploads",
+    "allowNotePublishing",
   ]) {
     if (brand[key] !== undefined && typeof brand[key] !== "boolean")
       throw new Error("图片导入设置无效");
@@ -220,6 +221,7 @@ async function validateConfig(value: unknown): Promise<Pack> {
         | boolean
         | undefined,
       allowZipUploads: brand.allowZipUploads === true,
+      allowNotePublishing: brand.allowNotePublishing === true,
       announcementEnabled: brand.announcementEnabled === true,
       announcement,
       links,
@@ -240,6 +242,30 @@ export async function readStandalone(file: File): Promise<Pack> {
     }
     const entry = zip.file("index.html");
     if (!entry) throw new Error("ZIP 中没有独立版 index.html");
+    const miniToolConfig = zip.file("sticker-config.json");
+    if (miniToolConfig) {
+      const config = record(JSON.parse(await miniToolConfig.async("string")));
+      if (config.format !== "sticker-minitool") throw new Error("小红书配置格式无效");
+      const assets: Record<string, string> = Object.create(null);
+      let total = 0;
+      for (const [id, path] of Object.entries(record(config.assets))) {
+        if (typeof path !== "string" || !/^\.\/assets\/a\d+\.(png|jpg|jpeg|webp|gif|svg)$/.test(path)) throw new Error("小红书图片路径无效");
+        const entry = zip.file(path.slice(2));
+        if (!entry) throw new Error("小红书图片资源不完整");
+        const bytes = await entry.async("uint8array");
+        total += bytes.length;
+        if (total > maxFileSize) throw new Error("配置图片超过 400 MB");
+        const ext = path.split(".").pop();
+        const mime = ext === "svg" ? "image/svg+xml" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`;
+        assets[id] = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error("图片读取失败"));
+          reader.readAsDataURL(new Blob([new Uint8Array(bytes)], { type: mime }));
+        });
+      }
+      return validateConfig(resolveAssets(config.pack, assets, true));
+    }
     html = await entry.async("string");
   } else if (/\.html?$/i.test(file.name)) html = await file.text();
   else throw new Error("请选择导出的 ZIP 或 index.html");

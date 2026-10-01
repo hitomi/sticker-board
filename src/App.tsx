@@ -43,6 +43,8 @@ import { isPendingAsset, resolveAssets } from "./assetStream";
 import SelectionMenus from "./SelectionMenus";
 import CategoryTabs from "./CategoryTabs";
 import { exportStandalone, readStandalone } from "./config";
+import { exportMiniTool } from "./minitoolExport";
+import { sendMiniToolImage } from "./minitool";
 import { DEFAULT_THEME, themeStyle } from "./theme";
 import { useEditor } from "./useEditor";
 import { useExpandedWorkspace } from "./useExpandedWorkspace";
@@ -208,10 +210,17 @@ export default function App({
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadingBackground, setUploadingBackground] = useState(false);
   const [query, setQuery] = useState("");
+  const [stickerLimit, setStickerLimit] = useState(100);
+  useEffect(() => setStickerLimit(100), [tab, query]);
   const [importing, setImporting] = useState(false);
   const [drawer, setDrawer] = useState<"stickers" | "settings" | null>(null);
   const [configOpen, setConfigOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [exportTarget, setExportTarget] = useState<"browser" | "minitool">("browser");
+  const [imageAction, setImageAction] = useState<"save" | "post" | null>(null);
+  const imageActionRef = useRef(false);
+  const [imageError, setImageError] = useState("");
+  const [imageSuccess, setImageSuccess] = useState("");
   const [pendingConfig, setPendingConfig] = useState<Pack | "reset" | null>(
     null,
   );
@@ -221,7 +230,7 @@ export default function App({
     normalizeBranding(pack.branding || defaultBranding),
   );
   const siteBranding = branding;
-  const navigationLinks = (siteBranding.links || []).flatMap((link) => {
+  const navigationLinks = (__MINITOOL__ ? [] : siteBranding.links || []).flatMap((link) => {
     const href = navigationHref(link.url);
     return href && link.title.trim()
       ? [{ title: link.title.trim(), href }]
@@ -237,7 +246,7 @@ export default function App({
     !__STANDALONE__ || !!siteBranding.allowStickerUploads;
   const allowBackgroundUploads =
     !__STANDALONE__ || !!siteBranding.allowBackgroundUploads;
-  const allowZipUploads = !__STANDALONE__ || !!siteBranding?.allowZipUploads;
+  const allowZipUploads = !__MINITOOL__ && (!__STANDALONE__ || !!siteBranding?.allowZipUploads);
   const editor = useEditor(
     report,
     themeStyle(siteBranding?.themeColor)["--accent-text"],
@@ -274,6 +283,7 @@ export default function App({
   const restoreRef = useRef<HTMLInputElement>(null);
   const configBusy =
     exporting ||
+    imageAction !== null ||
     renderingImage ||
     importing ||
     uploadingImages ||
@@ -359,7 +369,7 @@ export default function App({
     };
   }
   useEffect(() => {
-    if (!editor.ready || configBusy) return;
+    if (!persistent || !editor.ready || configBusy) return;
     void autosave.save(currentWorkspace()).catch(() => {});
   }, [
     pack,
@@ -369,6 +379,7 @@ export default function App({
     editor.ready,
     configBusy,
     autosave.save,
+    persistent,
   ]);
   useEffect(() => {
     if (autosave.status === "error")
@@ -395,11 +406,21 @@ export default function App({
     try {
       const result = await editor.renderImage();
       if (!result) return;
+      setImageSuccess("");
       const mobile =
         /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
         (/Macintosh/i.test(navigator.userAgent) &&
           navigator.maxTouchPoints > 1);
-      if (mobile) {
+      if (__MINITOOL__ && !siteBranding.allowNotePublishing) {
+        try {
+          await sendMiniToolImage(result.blob, "save");
+          report("图片已保存到相册");
+        } catch {
+          setImagePreview({ ...result, url: URL.createObjectURL(result.blob) });
+          setImageError("保存失败，请确认在小红书内打开、已更新客户端并允许访问相册，然后重试。");
+        }
+      } else if (__MINITOOL__ || mobile) {
+        setImageError("");
         setImagePreview({ ...result, url: URL.createObjectURL(result.blob) });
       } else {
         saveBlob(result.blob, result.filename);
@@ -409,13 +430,33 @@ export default function App({
       setRenderingImage(false);
     }
   }
+  async function useMiniToolImage(action: "save" | "post") {
+    if (!imagePreview || imageActionRef.current) return;
+    if (action === "post" && !siteBranding.allowNotePublishing) return;
+    imageActionRef.current = true;
+    setImageAction(action);
+    setImageError("");
+    setImageSuccess("");
+    try {
+      await sendMiniToolImage(imagePreview.blob, action);
+      if (action === "save") setImageSuccess("图片已保存到相册");
+    } catch {
+      setImageError(action === "save"
+        ? "保存失败，请确认在小红书内打开、已更新客户端并允许访问相册，然后重试。"
+        : "无法打开笔记发布页，请确认在小红书内打开并更新客户端后重试。");
+    } finally {
+      imageActionRef.current = false;
+      setImageAction(null);
+    }
+  }
   async function exportCurrent() {
     if (configBusy || pendingAssets > 0) return;
     setExporting(true);
     setConfigError("");
     try {
-      await exportStandalone(currentConfig());
-      report("独立版已生成");
+      if (exportTarget === "minitool") await exportMiniTool(currentConfig());
+      else await exportStandalone(currentConfig());
+      report(exportTarget === "minitool" ? "小红书小工具 ZIP 已生成，请上传后在模拟器和真机验证" : "独立版已生成");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "导出失败，请重试";
@@ -492,7 +533,7 @@ export default function App({
       const additions: Sticker[] = [];
       for (const file of files)
         additions.push({
-          id: `upload:${crypto.randomUUID()}`,
+          id: `upload:${typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`}`,
           name: file.name.replace(/\.[^.]+$/, ""),
           category: "我的上传",
           src: await readLocalImage(file),
@@ -734,7 +775,7 @@ export default function App({
       )}
       <div className="sticker-scroll">
         <div className="sticker-grid">
-          {shown.map((s) => (
+          {(__MINITOOL__ ? shown.slice(0, stickerLimit) : shown).map((s) => (
             <div className="sticker-item" key={s.id}>
               <button
                 className="sticker-card"
@@ -782,6 +823,7 @@ export default function App({
             )}
           </div>
         )}
+        {__MINITOOL__ && shown.length > stickerLimit && <button className="small-button wide" onClick={() => setStickerLimit((limit) => limit + 100)}>加载更多贴纸（还有 {shown.length - stickerLimit} 张）</button>}
       </div>
       <div className="library-foot">
         <span>
@@ -894,8 +936,8 @@ export default function App({
           )}
           <button
             className="primary"
-            aria-label={renderingImage ? "正在生成…" : "下载图片"}
-            title="下载图片"
+            aria-label={renderingImage ? "正在生成…" : __MINITOOL__ ? siteBranding.allowNotePublishing ? "导出图片" : "保存到相册" : "下载图片"}
+            title={__MINITOOL__ ? siteBranding.allowNotePublishing ? "导出图片" : "保存到相册" : "下载图片"}
             onClick={() => void downloadImage()}
             disabled={configBusy}
           >
@@ -904,7 +946,7 @@ export default function App({
             ) : (
               <Download size={16} />
             )}
-            <span>{renderingImage ? "正在生成…" : "下载图片"}</span>
+            <span>{renderingImage ? "正在生成…" : __MINITOOL__ ? siteBranding.allowNotePublishing ? "导出图片" : "保存到相册" : "下载图片"}</span>
           </button>
         </div>
       </header>
@@ -1024,7 +1066,7 @@ export default function App({
                   未保存 · 重试
                 </button>
               )}
-              {autosave.status === "temporary" && (
+              {!__MINITOOL__ && autosave.status === "temporary" && (
                 <span className="canvas-save-status">临时模式</span>
               )}
               <span className="canvas-zoom">
@@ -1116,23 +1158,29 @@ export default function App({
       <Modal
         open={imagePreview !== null}
         onOpenChange={(open) => {
-          if (!open) setImagePreview(null);
+          if (!open && !imageActionRef.current) setImagePreview(null);
         }}
         title="保存图片"
-        description="长按图片，选择保存到相册。也可以点击下方下载。"
+        description={__MINITOOL__ ? siteBranding.allowNotePublishing ? "保存到相册，或带入小红书笔记发布页。" : "允许访问相册后，点击下方按钮重试。" : "长按图片，选择保存到相册。也可以点击下方下载。"}
       >
         {imagePreview && (
           <>
             <div className="export-image-preview checker">
-              <img src={imagePreview.url} alt="画布成品预览，长按保存" />
+              <img src={imagePreview.url} alt={__MINITOOL__ ? "画布成品预览" : "画布成品预览，长按保存"} />
             </div>
+            {imageError && <p className="error" role="alert">{imageError}</p>}
+            {imageSuccess && <p role="status">{imageSuccess}</p>}
             <button
               className="primary wide"
-              onClick={() => saveBlob(imagePreview.blob, imagePreview.filename)}
+              disabled={imageAction !== null}
+              onClick={() => __MINITOOL__ ? void useMiniToolImage("save") : saveBlob(imagePreview.blob, imagePreview.filename)}
             >
               <Download size={16} />
-              下载图片
+              {imageAction === "save" ? "正在保存…" : __MINITOOL__ ? "保存到相册" : "下载图片"}
             </button>
+            {__MINITOOL__ && siteBranding.allowNotePublishing && <button className="primary wide" disabled={imageAction !== null} onClick={() => void useMiniToolImage("post")}>
+              {imageAction === "post" ? "正在打开…" : "发小红书笔记"}
+            </button>}
           </>
         )}
       </Modal>
@@ -1357,6 +1405,19 @@ export default function App({
           title="导出独立版"
           description="导出当前设置、贴纸库和画布。"
         >
+          <label className="field-heading" htmlFor="export-target">导出版本</label>
+          <select id="export-target" value={exportTarget} disabled={configBusy} onChange={(event) => {
+            setExportTarget(event.currentTarget.value as "browser" | "minitool");
+            setConfigError("");
+          }}>
+            <option value="browser">浏览器独立版</option>
+            <option value="minitool">小红书小工具</option>
+          </select>
+          {exportTarget === "minitool" && <p className="export-note">ZIP 最大 10 MB。支持导入图片、保存相册和发笔记；不支持导入 ZIP 或打开外链。上传后请在创服平台模拟器及 Android、iOS 真机扫码验证。</p>}
+          {exportTarget === "minitool" && <label className="upload-permission">
+            <span><strong>允许发小红书笔记</strong><small>关闭时直接保存到相册</small></span>
+            <input type="checkbox" role="switch" aria-label="允许发小红书笔记" checked={!!branding.allowNotePublishing} disabled={configBusy} onChange={(event) => setBranding({ ...branding, allowNotePublishing: event.currentTarget.checked })} />
+          </label>}
           <label className="upload-permission">
             <span>
               <strong>允许用户导入贴纸</strong>
@@ -1404,8 +1465,8 @@ export default function App({
               type="checkbox"
               role="switch"
               aria-label="允许用户导入 ZIP"
-              checked={!!branding.allowZipUploads}
-              disabled={configBusy}
+              checked={exportTarget !== "minitool" && !!branding.allowZipUploads}
+              disabled={configBusy || exportTarget === "minitool"}
               onChange={(event) =>
                 setBranding({
                   ...branding,
@@ -1478,7 +1539,7 @@ export default function App({
             ) : (
               <Download size={16} />
             )}{" "}
-            {exporting ? "正在导出…" : "下载独立版 ZIP"}
+            {exporting ? "正在导出…" : exportTarget === "minitool" ? "下载小红书小工具 ZIP" : "下载独立版 ZIP"}
           </button>
         </Modal>
       )}
@@ -1501,7 +1562,7 @@ export default function App({
           hidden
           type="file"
           multiple
-          accept=".png,.jpg,.jpeg,.webp,.gif,.svg,.avif"
+          accept={__MINITOOL__ ? "image/*" : ".png,.jpg,.jpeg,.webp,.gif,.svg,.avif"}
           ref={imageUploadRef}
           aria-label="导入贴纸图片"
           onChange={(event) => {
@@ -1514,7 +1575,7 @@ export default function App({
         <input
           hidden
           type="file"
-          accept=".png,.jpg,.jpeg,.webp,.gif,.svg,.avif"
+          accept={__MINITOOL__ ? "image/*" : ".png,.jpg,.jpeg,.webp,.gif,.svg,.avif"}
           ref={backgroundUploadRef}
           aria-label="导入背景图片文件"
           onChange={(event) => {

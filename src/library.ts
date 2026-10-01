@@ -15,6 +15,7 @@ export type Branding = {
   allowStickerUploads?: boolean;
   allowBackgroundUploads?: boolean;
   allowZipUploads?: boolean;
+  allowNotePublishing?: boolean;
   announcementEnabled?: boolean;
   announcement?: string;
   links?: { title: string; url: string }[];

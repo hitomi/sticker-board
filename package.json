@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "runtime": "vite build --mode standalone && node scripts/runtime.mjs",
+    "runtime": "vite build --mode standalone && node scripts/runtime.mjs && vite build --mode minitool && node scripts/minitool.mjs",
     "predev": "npm run runtime",
     "dev": "vite",
     "build": "tsc && npm run runtime && vite build",
@@ -26,9 +26,12 @@
     "preact": "^10.29.8"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/plugin-transform-unicode-property-regex": "^7.29.7",
     "@playwright/test": "^1.63.0",
     "@preact/preset-vite": "^2.10.6",
     "@tailwindcss/vite": "^4.3.3",
+    "postcss": "^8.5.28",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",

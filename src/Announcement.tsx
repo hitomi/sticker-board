@@ -51,8 +51,14 @@ export default function Announcement({ content }: { content: string }) {
       },
     );
     for (const link of fragment.querySelectorAll("a")) {
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
+      if (__MINITOOL__) link.removeAttribute("href");
+      else {
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+      }
+    }
+    if (__MINITOOL__) for (const image of fragment.querySelectorAll("img")) {
+      if (!/^data:image\//i.test(image.getAttribute("src") || "")) image.remove();
     }
     for (const input of fragment.querySelectorAll("input")) {
       // Markdown task lists are display-only, including when supplied as HTML.

@@ -1,0 +1,54 @@
+/* Local fallbacks for the offline container's Chrome 61 baseline. */
+html, body, #root { height: 100%; }
+:root {
+  --minitool-safe-top: var(--safe-area-inset-top, 0px);
+  --minitool-safe-bottom: var(--safe-area-inset-bottom, 0px);
+  --minitool-safe-left: var(--safe-area-inset-left, 0px);
+  --minitool-safe-right: var(--safe-area-inset-right, 0px);
+  /* System insets cover the status bar, not XHS's overlaid navigation buttons.
+     Reserve a separate 48px row below it so our header cannot share that row. */
+  --minitool-native-toolbar-height: 48px;
+  --minitool-content-top: calc(var(--minitool-safe-top) + var(--minitool-native-toolbar-height));
+}
+@supports (padding-top: env(safe-area-inset-top)) {
+  :root {
+    --minitool-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+    --minitool-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+    --minitool-safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+    --minitool-safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+  }
+}
+body { -webkit-touch-callout: none; }
+.app {
+  height: 100vh;
+  height: var(--app-height, 100vh);
+  padding: var(--minitool-content-top) var(--minitool-safe-right) var(--minitool-safe-bottom) var(--minitool-safe-left);
+  background: #fff;
+}
+.startup {
+  min-height: 100vh;
+  min-height: var(--app-height, 100vh);
+  padding: var(--minitool-content-top) var(--minitool-safe-right) var(--minitool-safe-bottom) var(--minitool-safe-left);
+}
+.workspace { grid-template-columns: minmax(0, 1fr) 360px; }
+.sticker-card { height: 130px; }
+@supports (aspect-ratio: 0.84) { .sticker-card { height: auto; } }
+.dialog {
+  width: 440px;
+  max-width: calc(100vw - var(--minitool-safe-left) - var(--minitool-safe-right) - 32px);
+  left: calc(50% + var(--minitool-safe-left) / 2 - var(--minitool-safe-right) / 2);
+  top: calc(50% + var(--minitool-content-top) / 2 - var(--minitool-safe-bottom) / 2);
+  max-height: 90vh;
+  max-height: calc(var(--app-height, 100vh) - var(--minitool-content-top) - var(--minitool-safe-bottom) - 32px);
+}
+.category-popover { width: 320px; max-width: calc(100vw - 32px); max-height: 360px; }
+button:focus, a:focus, input:focus, select:focus { outline: 3px solid var(--accent-border); outline-offset: 3px; }
+#boot-screen { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background: #f6f7f9; }
+@media (max-width: 700px) {
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+  .mobile-nav { padding-bottom: 12px; }
+  .dialog.drawer { top: auto; left: var(--minitool-safe-left); right: var(--minitool-safe-right); width: auto; max-width: 100%; max-height: 76vh; max-height: calc(var(--app-height, 100vh) - var(--minitool-content-top) - 24px); padding-bottom: calc(18px + var(--minitool-safe-bottom)); }
+  .drawer .sticker-scroll { max-height: 40vh; }
+  .drawer .sticker-card { height: 100px; }
+  @supports (aspect-ratio: 0.85) { .drawer .sticker-card { height: auto; } }
+}

@@ -24,6 +24,7 @@ function openDatabase() {
   return database;
 }
 export async function loadWorkspace(key: string): Promise<Pack | null> {
+  if (__MINITOOL__) return null;
   const db = await openDatabase();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction("workspaces", "readonly");
@@ -46,6 +47,7 @@ export async function loadWorkspace(key: string): Promise<Pack | null> {
   });
 }
 async function storeWorkspace(key: string, data: Pack) {
+  if (__MINITOOL__) return;
   const db = await openDatabase();
   return new Promise<void>((resolve, reject) => {
     const transaction = db.transaction("workspaces", "readwrite");

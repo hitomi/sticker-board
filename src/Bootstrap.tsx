@@ -49,7 +49,7 @@ export default function Bootstrap() {
       await paintStartup();
       if (!active) return;
       try {
-        embedded ||= __STANDALONE__
+        embedded ||= __MINITOOL__ ? window.__stickerPack! : __STANDALONE__
           ? JSON.parse(
               document.getElementById("sticker-pack")?.textContent || "null",
             ) || { name: "贴纸库", stickers: [] }
@@ -69,6 +69,11 @@ export default function Bootstrap() {
         setReloadRequired(true);
         setError("无法读取贴纸配置，请重新打开完整的独立版文件。");
         finishStartup();
+        return;
+      }
+      if (__MINITOOL__) {
+        startupMessage("正在加载画布素材…");
+        openEmbedded();
         return;
       }
       startupMessage("正在读取本地数据…");
@@ -102,7 +107,7 @@ export default function Bootstrap() {
       <App
         initialPack={initial}
         storageKey={storageKey}
-        persistent={!temporary}
+        persistent={!__MINITOOL__ && !temporary}
       />
     );
   return (

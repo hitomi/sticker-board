@@ -2,4 +2,7 @@ node_modules/
 dist/
 .generated/
 public/standalone.html
+public/minitool-runtime.zip
 *.local
+test-results/
+playwright-report/
